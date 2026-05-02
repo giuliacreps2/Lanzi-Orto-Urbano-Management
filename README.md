@@ -105,45 +105,6 @@ La piattaforma integra un sistema di gestione magazzino basato su **etichette di
 
 ---
 
-## 🚀 Installazione
-
-### Prerequisiti
-- Java 17+
-- Node.js 18+
-- PostgreSQL 14+
-- Maven 3.8+ (o Gradle)
-
----
-
-## ⚙️ Configurazione
-
-Crea o modifica il file `backend/src/main/resources/application.yml`:
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/lanzi_orto_urbano
-    username: your_db_user
-    password: your_db_password
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-
-security:
-  jwt:
-    secret: your_jwt_secret_key
-    expiration: 86400000 # 24 ore in ms
-
-app:
-  punti:
-    ratio: 10 # es. 1 punto ogni €10 spesi
-  b2b:
-    riordino-automatico: true
-```
-
----
-
 ## 📡 API Endpoints
 
 ### Autenticazione
@@ -310,15 +271,6 @@ The platform integrates a **batch label-based warehouse management system**, ena
 | Tailwind CSS / Bootstrap | Styling and components |
 
 ---
-
-## 🚀 Installation
-
-### Prerequisites
-- Java 17+
-- Node.js 18+
-- PostgreSQL 14+
-- Maven 3.8+ (or Gradle)
-
 
 ## 📡 API Endpoints
 
