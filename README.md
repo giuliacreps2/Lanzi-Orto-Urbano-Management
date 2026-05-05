@@ -11,12 +11,9 @@
 - [Architettura](#architettura)
 - [Tecnologie](#tecnologie)
 - [Struttura del Progetto](#struttura-del-progetto)
-- [Installazione](#installazione)
-- [Configurazione](#configurazione)
 - [API Endpoints](#api-endpoints)
 - [Sistema di Etichette e Lotti](#sistema-di-etichette-e-lotti)
 - [Contribuire](#contribuire)
-- [Licenza](#licenza)
 
 ---
 
@@ -95,7 +92,7 @@ La piattaforma integra un sistema di gestione magazzino basato su **etichette di
 | Spring Security | Autenticazione e autorizzazione (JWT) |
 | Spring Data JPA + Specification | Persistenza e query dinamiche |
 | PostgreSQL | Database relazionale |
-| Maven / Gradle | Build e gestione dipendenze |
+| Maven | Build e gestione dipendenze |
 
 ### Frontend
 | Tecnologia | Utilizzo |
@@ -178,12 +175,8 @@ Le etichette generate da ogni lotto vengono associate agli ordini in uscita. Qua
 - [Architecture](#architecture)
 - [Technologies](#technologies)
 - [Project Structure](#project-structure)
-- [Installation](#installation)
-- [Configuration](#configuration)
 - [API Endpoints](#api-endpoints-1)
 - [Label & Batch System](#label--batch-system)
-- [Contributing](#contributing)
-- [License](#license)
 
 ---
 
@@ -262,7 +255,7 @@ The platform integrates a **batch label-based warehouse management system**, ena
 | Spring Security | Authentication & authorization (JWT) |
 | Spring Data JPA + Specification | Persistence and dynamic queries |
 | PostgreSQL | Relational database |
-| Maven / Gradle | Build and dependency management |
+| Maven | Build and dependency management |
 
 ### Frontend
 | Technology | Usage |
