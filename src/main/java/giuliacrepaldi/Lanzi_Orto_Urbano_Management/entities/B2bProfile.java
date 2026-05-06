@@ -17,7 +17,7 @@ import java.util.UUID;
 
 
 @Entity
-@Table
+@Table(name = "b2b_profiles")
 public class B2bProfile {
 
     @Id

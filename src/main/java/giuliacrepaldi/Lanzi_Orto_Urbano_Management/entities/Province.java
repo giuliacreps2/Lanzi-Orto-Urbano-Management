@@ -13,7 +13,7 @@ import java.util.UUID;
 
 
 @Entity
-@Table
+@Table(name = "provinces")
 public class Province {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -25,7 +25,7 @@ public class Province {
     @Column(nullable = false)
     private String acronym;
 
-    
+
     public Province(String provinceName, String acronym) {
         this.provinceName = provinceName;
         this.acronym = acronym;

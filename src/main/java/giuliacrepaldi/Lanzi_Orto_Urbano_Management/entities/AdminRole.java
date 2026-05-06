@@ -14,7 +14,7 @@ import java.util.UUID;
 
 
 @Entity
-@Table
+@Table(name = "admin_roles")
 public class AdminRole {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

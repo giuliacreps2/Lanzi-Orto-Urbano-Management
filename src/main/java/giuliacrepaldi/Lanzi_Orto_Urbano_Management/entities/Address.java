@@ -13,7 +13,7 @@ import java.util.UUID;
 
 
 @Entity
-@Table
+@Table(name = "addresses")
 public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
