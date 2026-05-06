@@ -1,6 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums;
 
-public enum Type {
+public enum TypeActivity {
     FRUTTA_E_VERDURA,
     MINI_MARKET,
     NEGOZIO,
