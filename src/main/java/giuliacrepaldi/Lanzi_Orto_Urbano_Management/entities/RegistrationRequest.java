@@ -1,10 +1,10 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.RequestedRole;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -42,7 +42,7 @@ public class RegistrationRequest {
     private RequestedRole requestedRole;
 
 
-    @Type(JsonBinaryType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> metadata;
 
