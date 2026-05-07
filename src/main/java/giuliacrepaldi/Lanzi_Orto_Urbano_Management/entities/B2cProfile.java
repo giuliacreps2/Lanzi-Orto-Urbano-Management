@@ -52,7 +52,7 @@ public class B2cProfile {
         this.surname = surname;
         this.phoneNumber = phoneNumber;
         this.birthDate = birthDate;
-        this.avatar = avatar;
+        this.avatar = "https://ui-avatars.com/api?name=" + name + "+" + surname;
         this.loyaltyPoints = loyaltyPoints;
         this.loyaltyLastActivity = loyaltyLastActivity;
         this.user = user;

@@ -1,10 +1,16 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -16,7 +22,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "users")
-public class User {
+@JsonIgnoreProperties({"accountNonExpired", "accountNonLocked", "authorities", "credentialsNonExpired", "enabled"})
+public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID userId;
@@ -26,15 +33,22 @@ public class User {
     @Column(nullable = false)
     private String password;
     @Column(nullable = false)
-    private Boolean isActive;
+    @JsonIgnore
+    private boolean isActive;
     @Column(nullable = false)
-    private Boolean isEmailVerified;
+    private boolean isEmailVerified;
     @Column(nullable = false)
     private LocalDateTime createdAt;
     @Column(nullable = false)
     private LocalDateTime updatedAt;
     @Column(nullable = false)
     private LocalDateTime deletedAt;
+
+    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER)
+    private B2bProfile b2bProfile;
+
+    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER)
+    private B2cProfile b2cProfile;
 
 
     public User(String email, String password) {
@@ -50,5 +64,39 @@ public class User {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
+    }
+
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        if (this.b2cProfile != null) {
+            return "APPROVED".equals(this.b2bProfile.getStatusB2b());
+        }
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return this.isActive && this.isEmailVerified;
     }
 }

@@ -94,4 +94,6 @@ public class B2bProfile {
         this.statusB2b = statusB2b;
         this.user = user;
     }
+
+    
 }
