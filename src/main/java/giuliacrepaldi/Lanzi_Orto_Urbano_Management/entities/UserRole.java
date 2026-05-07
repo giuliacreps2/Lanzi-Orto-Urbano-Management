@@ -14,7 +14,8 @@ import java.util.UUID;
 
 
 @Entity
-@Table(name = "name_roles")
+@Table(name = "users_roles",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "role_id"}))
 public class UserRole {
 
     @Id
