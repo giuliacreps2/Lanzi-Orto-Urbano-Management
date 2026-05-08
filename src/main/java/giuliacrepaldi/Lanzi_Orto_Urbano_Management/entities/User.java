@@ -3,6 +3,7 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -41,8 +42,9 @@ public class User implements UserDetails {
     private LocalDateTime createdAt;
     @Column(nullable = false)
     private LocalDateTime updatedAt;
-    @Column(nullable = false)
+    @Column
     private LocalDateTime deletedAt;
+    private boolean enabled;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.EAGER)
     private B2bProfile b2bProfile;
@@ -85,7 +87,7 @@ public class User implements UserDetails {
     @Override
     public boolean isAccountNonLocked() {
         if (this.b2cProfile != null) {
-            return "APPROVED".equals(this.b2bProfile.getStatusB2b());
+            return StatusB2b.APPROVED.equals(this.b2bProfile.getStatusB2b());
         }
         return true;
     }

@@ -15,7 +15,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-@Builder
 
 @Entity
 @Table(name = "registration_requests")
@@ -46,5 +45,25 @@ public class RegistrationRequest {
     @Column(columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> metadata;
 
+    public RegistrationRequest(String email, String verificationToken, LocalDateTime tokenExpiresAt, boolean isUsed, LocalDateTime createdAt, LocalDateTime usedAt, RequestedRole requestedRole, Map<String, Object> metadata) {
+        this.email = email;
+        this.verificationToken = verificationToken;
+        this.tokenExpiresAt = LocalDateTime.now().plusDays(1);
+        this.isUsed = isUsed;
+        this.createdAt = LocalDateTime.now();
+        this.usedAt = usedAt;
+        this.requestedRole = requestedRole;
+        this.metadata = metadata;
+    }
+
+    public RegistrationRequest(String verificationToken, LocalDateTime tokenExpiresAt, boolean isUsed, LocalDateTime createdAt, LocalDateTime usedAt, RequestedRole requestedRole, Map<String, Object> metadata) {
+        this.verificationToken = verificationToken;
+        this.tokenExpiresAt = LocalDateTime.now().plusDays(1);
+        this.isUsed = isUsed;
+        this.createdAt = LocalDateTime.now();
+        this.usedAt = usedAt;
+        this.requestedRole = requestedRole;
+        this.metadata = metadata;
+    }
 
 }

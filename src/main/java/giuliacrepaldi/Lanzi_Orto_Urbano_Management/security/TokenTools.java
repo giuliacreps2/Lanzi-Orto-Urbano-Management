@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class TokenTools {
@@ -18,6 +19,7 @@ public class TokenTools {
         this.secret = secret;
     }
 
+    //TO GENERATE TOKEN
     public String generateToken(User user) {
         return Jwts.builder()
                 .issuedAt(new Date(System.currentTimeMillis()))
@@ -27,9 +29,22 @@ public class TokenTools {
                 .compact();
     }
 
+    //TO VERIFY TOKEN
     public void verifyToken(String token) {
         try {
-            Jwts.parser().verifyWith(Keys.hmacShaKeyFor(secret.getBytes())).build().parse(token);
+            Jwts.parser().verifyWith(Keys.hmacShaKeyFor(secret.getBytes())).build().parseSignedClaims(token);
+        } catch (Exception e) {
+            throw new UnauthorizedException("Invalid token");
+        }
+    }
+
+
+    //TO READ TOKEN with ID
+    public UUID extractUserId(String token) {
+        try {
+            String subject = Jwts.parser().verifyWith(Keys.hmacShaKeyFor(secret.getBytes())).build().parseSignedClaims(token)
+                    .getPayload().getSubject();
+            return UUID.fromString(subject);
         } catch (Exception e) {
             throw new UnauthorizedException("Invalid token");
         }
