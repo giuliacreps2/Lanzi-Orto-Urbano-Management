@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -12,4 +13,6 @@ public interface RegistrationRequestsRepository extends JpaRepository<Registrati
     boolean existsById(UUID registrationRequestId);
 
     boolean existsByEmailAndIsUsedFalseAndTokenExpiresAtAfter(String email, LocalDateTime now);
+
+    Optional<RegistrationRequest> findByVerificationToken(String token);
 }

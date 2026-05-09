@@ -86,7 +86,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        if (this.b2cProfile != null) {
+        if (this.b2bProfile != null) {
             return StatusB2b.APPROVED.equals(this.b2bProfile.getStatusB2b());
         }
         return true;

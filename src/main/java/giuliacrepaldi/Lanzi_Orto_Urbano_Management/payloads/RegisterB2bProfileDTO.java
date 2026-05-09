@@ -7,6 +7,7 @@ public record RegisterB2bProfileDTO(
         String contactPhone,
         String vatNumber,
         String fiscalCode,
-        String companyName
+        String companyName,
+        String password
 ) {
 }

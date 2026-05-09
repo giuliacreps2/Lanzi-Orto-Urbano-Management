@@ -9,6 +9,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -28,7 +29,7 @@ public class TokenFilter extends OncePerRequestFilter {
     private final UsersService usersService;
     private final UsersRolesService usersRolesService;
 
-    public TokenFilter(TokenTools tokenTools, UsersService usersService, UsersRolesService usersRolesService) {
+    public TokenFilter(TokenTools tokenTools, @Lazy UsersService usersService, @Lazy UsersRolesService usersRolesService) {
         this.tokenTools = tokenTools;
         this.usersService = usersService;
         this.usersRolesService = usersRolesService;

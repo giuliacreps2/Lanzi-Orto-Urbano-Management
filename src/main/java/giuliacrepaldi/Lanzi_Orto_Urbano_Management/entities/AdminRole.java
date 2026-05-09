@@ -11,6 +11,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
+@Builder
 
 
 @Entity
@@ -31,10 +32,11 @@ public class AdminRole {
     @JoinColumn(name = "user_id")
     private User user;
 
-    public AdminRole(String adminRoleName, String adminRoleSurname, LocalDateTime adminRoleLastLoginAt, User user) {
-        this.adminRoleName = adminRoleName;
-        this.adminRoleSurname = adminRoleSurname;
-        this.adminRoleLastLoginAt = adminRoleLastLoginAt;
-        this.user = user;
-    }
+
+//    public AdminRole(String adminRoleName, String adminRoleSurname, LocalDateTime adminRoleLastLoginAt, User user) {
+//        this.adminRoleName = adminRoleName;
+//        this.adminRoleSurname = adminRoleSurname;
+//        this.adminRoleLastLoginAt = adminRoleLastLoginAt;
+//        this.user = user;
+//    }
 }

@@ -70,7 +70,7 @@ public class UsersService {
     //UPDATE
     public User findByIdAndUpdate(UUID userId, UserDTO body) {
         //Controllo se l'utente esiste
-        if (this.usersRepository.existsById(userId))
+        if (!this.usersRepository.existsById(userId))
             throw new NotFoundException("User with this id:" + userId + "not found");
         User found = this.findById(userId);
 
