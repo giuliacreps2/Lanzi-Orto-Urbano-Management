@@ -22,14 +22,14 @@ public class PermissionRole {
 
     @ManyToOne
     @JoinColumn(name = "admin_role_id")
-    private AdminRole adminRole;
+    private AdminProfile adminProfile;
 
     @ManyToOne
     @JoinColumn(name = "permission_id")
     private Permission permission;
 
-    public PermissionRole(AdminRole adminRole, Permission permission) {
-        this.adminRole = adminRole;
+    public PermissionRole(AdminProfile adminProfile, Permission permission) {
+        this.adminProfile = adminProfile;
         this.permission = permission;
     }
 }

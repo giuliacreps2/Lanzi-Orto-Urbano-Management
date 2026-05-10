@@ -39,6 +39,10 @@ public class B2cProfile {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
+    @ManyToOne
+    @JoinColumn(name = "address_id")
+    private Address address;
+
 
     public B2cProfile(String name, String surname, Long loyaltyPoints, User user) {
         this.name = name;

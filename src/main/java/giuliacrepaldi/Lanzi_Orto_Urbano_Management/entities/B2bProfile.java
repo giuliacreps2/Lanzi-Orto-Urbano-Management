@@ -60,6 +60,11 @@ public class B2bProfile {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
+    @ManyToOne
+    @JoinColumn(name = "legal_address_id")
+    private Address legalAddress;
+
+
     public B2bProfile(String vatNumber, String fiscalCode, String contactName, String contactSurname, String contactPhone, String contactEmail, String companyName, Long loyaltyPoints, TypeActivity typeActivity, StatusB2b statusB2b, User user) {
         this.vatNumber = vatNumber;
         this.fiscalCode = fiscalCode;
@@ -95,5 +100,5 @@ public class B2bProfile {
         this.user = user;
     }
 
-    
+
 }

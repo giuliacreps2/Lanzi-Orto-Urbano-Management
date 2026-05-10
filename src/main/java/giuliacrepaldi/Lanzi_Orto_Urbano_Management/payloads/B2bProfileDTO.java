@@ -1,19 +1,17 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads;
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.Address;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.TypeActivity;
-import jakarta.validation.constraints.AssertTrue;
 
-public record RegisterB2bProfileDTO(
+public record B2bProfileDTO(
+        String vatNumber,
+        String fiscalCode,
+        String contactPhone,
         String contactName,
         String contactSurname,
         String contactEmail,
-        String contactPhone,
-        String vatNumber,
-        String fiscalCode,
         String companyName,
-        String password,
         TypeActivity typeActivity,
-        @AssertTrue(message = "Privacy policy must be accepted")
-        boolean privacyAccepted
+        Address legalAddress
 ) {
 }

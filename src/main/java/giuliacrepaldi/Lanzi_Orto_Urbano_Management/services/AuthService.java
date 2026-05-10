@@ -6,7 +6,10 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.UnauthorizedException;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.*;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.LoginDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.NewUserRespDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.RegisterB2bProfileDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.RegisterUserDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.security.TokenTools;
 import jakarta.transaction.Transactional;
@@ -34,10 +37,10 @@ public class AuthService {
     private final B2cProfilesRepository b2cProfilesRepository;
     private final UsersRolesService usersRolesService;
     private final B2bProfilesRepository b2bProfilesRepository;
-    private final AdminRolesRepository adminRolesRepository;
-    private final AdminRolesService adminRolesService;
+    private final AdminProfilesRepository adminProfilesRepository;
+    private final AdminProfilesService adminProfilesService;
 
-    public AuthService(UsersService usersService, UsersRepository usersRepository, TokenTools tokenTools, RegistrationRequestsService registrationRequestsService, RegistrationRequestsRepository registrationRequestsRepository, PasswordEncoder bcrypt, RolesRepository rolesRepository, RolesService rolesService, B2cProfilesRepository b2cProfilesRepository, UsersRolesService usersRolesService, B2bProfilesRepository b2bProfilesRepository, AdminRolesRepository adminRolesRepository, AdminRolesService adminRolesService) {
+    public AuthService(UsersService usersService, UsersRepository usersRepository, TokenTools tokenTools, RegistrationRequestsService registrationRequestsService, RegistrationRequestsRepository registrationRequestsRepository, PasswordEncoder bcrypt, RolesRepository rolesRepository, RolesService rolesService, B2cProfilesRepository b2cProfilesRepository, UsersRolesService usersRolesService, B2bProfilesRepository b2bProfilesRepository, AdminProfilesRepository adminProfilesRepository, AdminProfilesService adminProfilesService) {
         this.usersService = usersService;
         this.usersRepository = usersRepository;
         this.tokenTools = tokenTools;
@@ -49,8 +52,8 @@ public class AuthService {
         this.b2cProfilesRepository = b2cProfilesRepository;
         this.usersRolesService = usersRolesService;
         this.b2bProfilesRepository = b2bProfilesRepository;
-        this.adminRolesRepository = adminRolesRepository;
-        this.adminRolesService = adminRolesService;
+        this.adminProfilesRepository = adminProfilesRepository;
+        this.adminProfilesService = adminProfilesService;
     }
 
     //LOGIN ONLY
@@ -102,6 +105,7 @@ public class AuthService {
 
 
     //VERIFICA E CREAZIONE UTENTE E B2C
+    @Transactional
     public NewUserRespDTO verifyAndCreateUser(String token) {
 
         RegistrationRequest found = this.registrationRequestsRepository.findByVerificationToken(token)
@@ -250,8 +254,15 @@ public class AuthService {
         return new NewUserRespDTO(savedNewUser.getUserId());
     }
 
+
+    //SIGN UP ADMIN PROFILE
+    public String registerNewAdminProfile(RegisterAdminProfileDTO body) {
+        if(this.adminProfilesRepository.existsByEmail())
+    }
+
     //VERIFICA E CREAZIONE ADMIN
-    public AdminRoleDTO verifyAndCreateAdminRole(String token) {
+    @Transactional
+    public String verifyAndCreateAdminRole(String token) {
 
         RegistrationRequest found = this.registrationRequestsRepository.findByVerificationToken(token)
                 .orElseThrow(() -> new NotFoundException("Token already exists"));
@@ -276,7 +287,9 @@ public class AuthService {
 
         //CREAZIONE USER ADMIN ROLE
         if (found.getRequestedRole() == RequestedRole.B2C) {
-            AdminRole newAdminRole = new AdminRole();
+            AdminProfile newAdminProfile = new AdminProfile();
+            newAdminProfile.setAdminProfileName((String) metadata.get("adminProfileName"));
+            newAdminProfile.setAdminProfileSurname((String) metadata.get("adminProfileSurname"));
 
 //            newAdminRole.setUser(savedNewUser);
 //            adminRolesRepository.save(newAdminRole);
@@ -289,7 +302,7 @@ public class AuthService {
 //            newB2cProfile.setUser(savedNewUser);
 //            b2cProfilesRepository.save(newB2cProfile);
 
-            adminRolesService.saveAdminRole(savedNewUser, newAdminRole);
+            adminProfilesService.saveAdminProfile(savedNewUser, newAdminProfile);
 
             Role newRole = this.rolesRepository.findByRoleName("B2B")
                     .orElseThrow(() -> new NotFoundException("Role not found"));
@@ -300,7 +313,7 @@ public class AuthService {
             found.setUsedAt(LocalDateTime.now());
             this.registrationRequestsRepository.save(found);
 
-            return new NewAdminRoleDTO(newAdminRole.getAdminRoleId())
+            return "Your registration as Admin has taken place. Check your email address.";
         }
     }
 }

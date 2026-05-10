@@ -1,10 +1,11 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.AdminRole;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.AdminProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.UUID;
+
 @Repository
-public interface AdminRolesRepository extends JpaRepository<AdminRole, Integer> {
-    boolean existsByEmail(String email);
+public interface AdminProfilesRepository extends JpaRepository<AdminProfile, UUID> {
 }

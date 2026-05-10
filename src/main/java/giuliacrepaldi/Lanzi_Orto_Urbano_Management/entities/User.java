@@ -45,11 +45,15 @@ public class User implements UserDetails {
     @Column
     private LocalDateTime deletedAt;
     private boolean enabled;
+    @Column(nullable = false)
+    private boolean privacyAccepted = false;
 
-    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER)
+    private LocalDateTime privacyAcceptedAt;
+
+    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private B2bProfile b2bProfile;
 
-    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER)
+    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private B2cProfile b2cProfile;
 
 

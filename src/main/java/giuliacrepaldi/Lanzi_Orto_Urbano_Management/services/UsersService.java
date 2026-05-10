@@ -91,7 +91,7 @@ public class UsersService {
 
     //DELETE
     public void findByIdAndDelete(UUID userId) {
-        if (this.usersRepository.existsById(userId))
+        if (!this.usersRepository.existsById(userId))
             throw new NotFoundException("User with this id:" + userId + "not found");
         User found = this.findById(userId);
 
