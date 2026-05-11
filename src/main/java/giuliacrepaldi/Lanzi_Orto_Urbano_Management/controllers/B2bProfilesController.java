@@ -50,13 +50,13 @@ public class B2bProfilesController {
         return this.b2bProfilesService.search(contactName, contactSurname, vatNumber, fiscalCode, contactPhone, provinceName, companyName, contactEmail, pageable);
     }
 
-    @GetMapping("/{b2cProfileId}")
+    @GetMapping("/{b2bProfileId}")
     @PreAuthorize("hasAnyAuthority('ADMIN')")
     public B2bProfile getById(@PathVariable UUID b2bProfileId) {
         return this.b2bProfilesService.findById(b2bProfileId);
     }
 
-    @PutMapping("/{b2cProfileId}")
+    @PutMapping("/{b2bProfileId}")
     @PreAuthorize("hasAnyAuthority('ADMIN')")
     public B2bProfile adminUpdate(@PathVariable UUID b2bProfileId,
                                   @RequestBody @Validated

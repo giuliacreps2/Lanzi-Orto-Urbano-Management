@@ -47,6 +47,10 @@ public class RolesService {
         return roles;
     }
 
+    public boolean existsByRoleName(String roleName) {
+        return this.rolesRepository.existsByRoleName(roleName);
+    }
+
 
     //UPDATE
     public Role findByIdAndUpdate(UUID roleId, RoleDTO body) {

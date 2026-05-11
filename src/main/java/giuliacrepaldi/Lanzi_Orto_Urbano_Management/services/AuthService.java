@@ -1,15 +1,13 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.*;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.RequestedRole;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.TypeActivity;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.UnauthorizedException;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.LoginDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.NewUserRespDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.RegisterB2bProfileDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.RegisterUserDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.security.TokenTools;
 import jakarta.transaction.Transactional;
@@ -89,18 +87,18 @@ public class AuthService {
                 .tokenExpiresAt(LocalDateTime.now().plusDays(1))
                 .isUsed(false)
                 .createdAt(LocalDateTime.now())
-                .requestedRole(RequestedRole.B2C)
+                .clientCategory(ClientCategory.B2C)
                 .metadata(Map.of("name", body.name(),
-                        "surname", body.surname(), "password", Objects.requireNonNull(this.bcrypt.encode(body.password())), "phone", body.phoneNumber()))
+                        "surname", body.surname(), "password", Objects.requireNonNull(this.bcrypt.encode(body.password())), "phoneNumber", body.phoneNumber()
+                        , "privacyAccepted", body.privacyAccepted()))
                 .build();
 
         RegistrationRequest savedR = this.registrationRequestsRepository.save(newR);
 
         //            this.emailSender.sendRegistrationEmail(savedR);
 
-        log.info("New RegistrationRequest: " + savedR);
-        log.info("Check your email");
-        return "Your registration has taken place. Check your email address.";
+        log.info("New B2C registration request for: {}", body.email());
+        return "Your registration has taken place. Please check your email to verify your account.";
     }
 
 
@@ -109,7 +107,7 @@ public class AuthService {
     public NewUserRespDTO verifyAndCreateUser(String token) {
 
         RegistrationRequest found = this.registrationRequestsRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new NotFoundException("Token is already used"));
+                .orElseThrow(() -> new NotFoundException("Token not found"));
 
         if (found.isUsed())
             throw new BadRequestException("Token is already used");
@@ -124,23 +122,25 @@ public class AuthService {
         newUser.setPassword((String) metadata.get("password"));
         newUser.setActive(true);
         newUser.setEmailVerified(true);
+        newUser.setPrivacyAccepted((Boolean) metadata.get("privacyAccepted"));
+        newUser.setPrivacyAcceptedAt(LocalDateTime.now());
         newUser.setCreatedAt(LocalDateTime.now());
         newUser.setUpdatedAt(LocalDateTime.now());
 
         User savedNewUser = this.usersRepository.save(newUser);
 
         //CREAZIONE B2C PROFILE
-        if (found.getRequestedRole() == RequestedRole.B2C) {
+        if (found.getClientCategory() == ClientCategory.B2C) {
             B2cProfile newB2cProfile = new B2cProfile();
             newB2cProfile.setName((String) metadata.get("name"));
             newB2cProfile.setSurname((String) metadata.get("surname"));
-            newB2cProfile.setPhoneNumber((String) metadata.get("phone"));
+            newB2cProfile.setPhoneNumber((String) metadata.get("phoneNumber"));
             newB2cProfile.setLoyaltyPoints(20L);
             newB2cProfile.setUser(savedNewUser);
             b2cProfilesRepository.save(newB2cProfile);
         }
 
-        Role newRole = this.rolesRepository.findByRoleName("B2C")
+        Role newRole = this.rolesRepository.findByRoleName("USER")
                 .orElseThrow(() -> new NotFoundException("Role not found"));
 
         usersRolesService.saveUserRole(savedNewUser, newRole);
@@ -149,8 +149,12 @@ public class AuthService {
         found.setUsedAt(LocalDateTime.now());
         this.registrationRequestsRepository.save(found);
 
+        log.info("New B2cUser has been registered: {}", found);
         return new NewUserRespDTO(savedNewUser.getUserId());
     }
+
+
+    //____________________________________B2B___________________________________//
 
 
     //SIGN UP B2B
@@ -171,22 +175,25 @@ public class AuthService {
                 .tokenExpiresAt(LocalDateTime.now().plusDays(1))
                 .isUsed(false)
                 .createdAt(LocalDateTime.now())
-                .requestedRole(RequestedRole.B2B)
+                .clientCategory(ClientCategory.B2B)
                 .metadata(Map.of(
                         "contactName", body.contactName(),
                         "contactSurname", body.contactSurname(),
+                        "contactEmail", body.contactEmail(),
                         "password", Objects.requireNonNull(this.bcrypt.encode(body.password())),
                         "contactPhone", body.contactPhone(),
-                        "vatNumber", body.vatNumber(),
-                        "fiscalCode", body.fiscalCode(),
-                        "companyName", body.companyName()
+                        "vatNumber", Objects.requireNonNullElse(body.vatNumber(), ""),
+                        "fiscalCode", Objects.requireNonNullElse(body.fiscalCode(), ""),
+                        "companyName", body.companyName(),
+                        "typeActivity", body.typeActivity().name(),
+                        "privacyAccepted", body.privacyAccepted()
                 )).build();
 
         RegistrationRequest savedR = this.registrationRequestsRepository.save(newR);
 
         //            this.emailSender.sendRegistrationEmail(savedR);
 
-        log.info("New Registration Request: " + savedR);
+        log.info("New B2B registration request for: {}", body.contactEmail());
         return "Your registration has taken place. Check your email address.";
     }
 
@@ -210,27 +217,31 @@ public class AuthService {
         newUser.setPassword((String) metadata.get("password"));
         newUser.setActive(false);
         newUser.setEmailVerified(true);
+        newUser.setPrivacyAccepted((Boolean) metadata.get("privacyAccepted"));
+        newUser.setPrivacyAcceptedAt(LocalDateTime.now());
         newUser.setCreatedAt(LocalDateTime.now());
         newUser.setUpdatedAt(LocalDateTime.now());
 
         User savedNewUser = this.usersRepository.save(newUser);
 
         //CREAZIONE B2B PROFILE
-        if (found.getRequestedRole() == RequestedRole.B2B) {
+        if (found.getClientCategory() == ClientCategory.B2B) {
             B2bProfile newB2bProfile = new B2bProfile();
             newB2bProfile.setContactName((String) metadata.get("contactName"));
             newB2bProfile.setContactSurname((String) metadata.get("contactSurname"));
-            newB2bProfile.setContactPhone((String) metadata.get("phone"));
+            newB2bProfile.setContactPhone((String) metadata.get("contactPhone"));
+            newB2bProfile.setContactEmail(found.getEmail());
             newB2bProfile.setVatNumber((String) metadata.get("vatNumber"));
             newB2bProfile.setFiscalCode((String) metadata.get("fiscalCode"));
             newB2bProfile.setCompanyName((String) metadata.get("companyName"));
+            newB2bProfile.setTypeActivity(TypeActivity.valueOf((String) metadata.get("typeActivity")));
             newB2bProfile.setLoyaltyPoints(20L);
-            newB2bProfile.setUser(savedNewUser);
             newB2bProfile.setStatusB2b(StatusB2b.PENDING);
+            newB2bProfile.setUser(savedNewUser);
             b2bProfilesRepository.save(newB2bProfile);
         }
 
-        Role newRole = this.rolesRepository.findByRoleName("B2B")
+        Role newRole = this.rolesRepository.findByRoleName("USER")
                 .orElseThrow(() -> new NotFoundException("Role not found"));
 
 
@@ -249,20 +260,68 @@ public class AuthService {
         found.setUsedAt(LocalDateTime.now());
         this.registrationRequestsRepository.save(found);
 
-//        this.emailSender.notifyAdminForApproval(savedNewUser);
+        //      this.emailSender.notifyAdminForApproval(savedNewUser);
 
         return new NewUserRespDTO(savedNewUser.getUserId());
     }
 
 
+    //APPROVAZIONE B2B DA PARTE DELL'ADMIN
+    @Transactional
+    public String approveB2bProfile(UUID userId) {
+
+        User user = this.usersService.findById(userId);
+
+        if (user.getB2bProfile() == null) throw new BadRequestException("This user has no B2B profile");
+
+        if (user.getB2bProfile().getStatusB2b() == StatusB2b.APPROVED)
+            throw new BadRequestException("This user has already approved B2B profile");
+
+        user.getB2bProfile().setStatusB2b(StatusB2b.APPROVED);
+        user.setActive(true);
+        user.setUpdatedAt(LocalDateTime.now());
+        this.usersRepository.save(user);
+
+        //this.emailSender.sendApprovalEmail(user);
+
+        log.info("B2B profile approved for userId: {}", userId);
+        return "B2B profile has been approved successfully";
+    }
+
+
+    //____________________________________ADMIN___________________________________//
+
     //SIGN UP ADMIN PROFILE
     public String registerNewAdminProfile(RegisterAdminProfileDTO body) {
-        if(this.adminProfilesRepository.existsByEmail())
+        if (this.usersRepository.existsByEmail(body.email()))
+            throw new BadRequestException("User with this email already exists");
+
+        if (this.registrationRequestsRepository
+                .existsByEmailAndIsUsedFalseAndTokenExpiresAtAfter(body.email(), LocalDateTime.now()))
+            throw new BadRequestException("A pending registration already exists for this email");
+
+        RegistrationRequest newR = RegistrationRequest.builder()
+                .email(body.email())
+                .verificationToken(UUID.randomUUID().toString())
+                .tokenExpiresAt(LocalDateTime.now().plusDays(1))
+                .isUsed(false)
+                .clientCategory(ClientCategory.B2C)
+                .metadata(Map.of(
+                        "name", body.name(),
+                        "surname", body.surname(),
+                        "password", this.bcrypt.encode(body.password()),
+                        "role", "ADMIN"
+                ))
+                .build();
+
+        this.registrationRequestsRepository.save(newR);
+        log.info("New admin profile has been registered successfully: {}", body.email());
+        return "New admin profile has been registered successfully";
     }
 
     //VERIFICA E CREAZIONE ADMIN
     @Transactional
-    public String verifyAndCreateAdminRole(String token) {
+    public NewUserRespDTO verifyAndCreateAdminRole(String token) {
 
         RegistrationRequest found = this.registrationRequestsRepository.findByVerificationToken(token)
                 .orElseThrow(() -> new NotFoundException("Token already exists"));
@@ -280,40 +339,28 @@ public class AuthService {
         newUser.setPassword((String) metadata.get("password"));
         newUser.setActive(true);
         newUser.setEmailVerified(true);
+        newUser.setPrivacyAccepted(true);
+        newUser.setPrivacyAcceptedAt(LocalDateTime.now());
         newUser.setCreatedAt(LocalDateTime.now());
         newUser.setUpdatedAt(LocalDateTime.now());
 
         User savedNewUser = this.usersRepository.save(newUser);
 
-        //CREAZIONE USER ADMIN ROLE
-        if (found.getRequestedRole() == RequestedRole.B2C) {
-            AdminProfile newAdminProfile = new AdminProfile();
-            newAdminProfile.setAdminProfileName((String) metadata.get("adminProfileName"));
-            newAdminProfile.setAdminProfileSurname((String) metadata.get("adminProfileSurname"));
+        adminProfilesService.saveAdminProfile(
+                savedNewUser,
+                (String) metadata.get("name"),
+                (String) metadata.get("surname")
+        );
 
-//            newAdminRole.setUser(savedNewUser);
-//            adminRolesRepository.save(newAdminRole);
+        Role newRole = this.rolesRepository.findByRoleName("ADMIN")
+                .orElseThrow(() -> new NotFoundException("Role ADMIN not found"));
 
-//            B2cProfile newB2cProfile = new B2cProfile();
-//            newB2cProfile.setName((String) metadata.get("name"));
-//            newB2cProfile.setSurname((String) metadata.get("surname"));
-//            newB2cProfile.setPhoneNumber((String) metadata.get("phone"));
-//            newB2cProfile.setLoyaltyPoints(20L);
-//            newB2cProfile.setUser(savedNewUser);
-//            b2cProfilesRepository.save(newB2cProfile);
+        usersRolesService.saveUserRole(savedNewUser, newRole);
 
-            adminProfilesService.saveAdminProfile(savedNewUser, newAdminProfile);
+        found.setUsed(true);
+        found.setUsedAt(LocalDateTime.now());
+        this.registrationRequestsRepository.save(found);
 
-            Role newRole = this.rolesRepository.findByRoleName("B2B")
-                    .orElseThrow(() -> new NotFoundException("Role not found"));
-
-            usersRolesService.saveUserRole(savedNewUser, newRole);
-
-            found.setUsed(true);
-            found.setUsedAt(LocalDateTime.now());
-            this.registrationRequestsRepository.save(found);
-
-            return "Your registration as Admin has taken place. Check your email address.";
-        }
+        return new NewUserRespDTO(savedNewUser.getUserId());
     }
 }

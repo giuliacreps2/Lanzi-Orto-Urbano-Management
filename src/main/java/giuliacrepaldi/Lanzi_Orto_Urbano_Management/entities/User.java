@@ -42,7 +42,7 @@ public class User implements UserDetails {
     private LocalDateTime createdAt;
     @Column(nullable = false)
     private LocalDateTime updatedAt;
-    @Column
+    @Column(name = "deleted_at", nullable = true)
     private LocalDateTime deletedAt;
     private boolean enabled;
     @Column(nullable = false)

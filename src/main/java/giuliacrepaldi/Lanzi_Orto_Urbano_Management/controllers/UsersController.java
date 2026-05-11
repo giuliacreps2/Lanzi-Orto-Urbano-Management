@@ -62,7 +62,7 @@ public class UsersController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable UUID userId) {
         log.info("Delete user with id: " + userId);
-        this.usersService.findByIdAndUpdate(userId, null);
+        this.usersService.findByIdAndDelete(userId);
     }
 
 

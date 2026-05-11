@@ -1,6 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.RequestedRole;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -39,7 +39,7 @@ public class RegistrationRequest {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private RequestedRole requestedRole;
+    private ClientCategory clientCategory;
 
 
     @JdbcTypeCode(SqlTypes.JSON)

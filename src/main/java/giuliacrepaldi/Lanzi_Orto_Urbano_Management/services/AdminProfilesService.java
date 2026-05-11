@@ -5,7 +5,6 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.AdminProfileDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.AdminProfilesRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,11 +14,9 @@ import java.time.LocalDateTime;
 public class AdminProfilesService {
 
     private final AdminProfilesRepository adminProfilesRepository;
-    private final PasswordEncoder bcrypt;
 
-    public AdminProfilesService(AdminProfilesRepository adminProfilesRepository, PasswordEncoder bcrypt) {
+    public AdminProfilesService(AdminProfilesRepository adminProfilesRepository) {
         this.adminProfilesRepository = adminProfilesRepository;
-        this.bcrypt = bcrypt;
     }
 
     //CREATE ADMIN ROLE
@@ -37,5 +34,8 @@ public class AdminProfilesService {
         log.info("Admin Role Saved: {}", savedAdminProfile);
 
         return savedAdminProfile;
+    }
+
+    public void saveAdminProfile(User savedNewUser, String name, String surname) {
     }
 }

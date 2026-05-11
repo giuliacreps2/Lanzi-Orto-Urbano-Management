@@ -1,12 +1,20 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.controllers;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.B2bProfile;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.NewUserRespDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.RegisterAdminProfileDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.AuthService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.UUID;
+
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/auth/admin")
 public class AdminProfileController {
 
     private final AuthService authService;
@@ -15,21 +23,31 @@ public class AdminProfileController {
         this.authService = authService;
     }
 
-    @PostMapping("/register/admin")
+
+    //REGISTRAZIONE NUOVO ADMIN
+    @PostMapping("/register")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public
+    public String registerAdminProfile(@RequestBody @Validated RegisterAdminProfileDTO body, BindingResult validation) {
+        if (validation.hasErrors()) {
+            List<String> errors = validation.getFieldErrors()
+                    .stream().map(e -> e.getDefaultMessage()).toList();
+            throw new ValidationException(errors);
+        }
+        return this.authService.registerNewAdminProfile(body);
+    }
 
 
+    //VERIFICA TOKEN E CREAZIONE ADMIN
     @GetMapping("/verify/admin")
     @ResponseStatus(HttpStatus.CREATED)
-    public NewAdminRespDTO verifyAdmin(@RequestParam("token") String token) {
+    public NewUserRespDTO verifyAdmin(@RequestParam("token") String token) {
         return this.authService.verifyAndCreateAdminRole(token);
     }
 
-    @PostMapping("/user/{b2bProfileId}/approved-b2b")
-    @ResponseStatus(HttpStatus.CREATED)
-    public B2bProfile verifyAndCreateB2bProfile(@RequestParam("token") String token, @PathVariable("b2bProfileId") String b2bProfileId) {
-        
-        return this.authService.verifyAndCreateB2bProfile(token);
+    @PostMapping("/approved-b2b/{userId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public String approveB2b(@PathVariable UUID userId) {
+        return this.authService.approveB2bProfile(userId);
     }
 }
