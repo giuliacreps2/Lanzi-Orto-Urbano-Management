@@ -26,7 +26,7 @@ public class PackagingTypesController {
 
 
     //POST
-    @PostMapping("/type")
+    @PostMapping("/new-type")
     @PreAuthorize("hasAthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public PackagingType createPackagingType(@RequestBody @Validated PackagingTypeDTO body, BindingResult validation) {

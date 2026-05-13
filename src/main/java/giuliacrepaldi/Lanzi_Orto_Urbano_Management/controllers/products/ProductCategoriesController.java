@@ -25,7 +25,7 @@ public class ProductCategoriesController {
     }
 
     //POST
-    @PostMapping("/category")
+    @PostMapping("/new-category")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductCategory saveProductCategory(@RequestBody @Validated ProductCategoryDTO body, BindingResult validation) {
