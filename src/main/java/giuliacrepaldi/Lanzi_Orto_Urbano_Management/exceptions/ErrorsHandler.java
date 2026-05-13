@@ -1,6 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.ErrorsDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.ErrorsDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authorization.AuthorizationDeniedException;

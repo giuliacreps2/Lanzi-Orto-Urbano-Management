@@ -1,7 +1,4 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products;
 
-public enum Unit {
-    MILLIGRAM,
-    GRAM,
-    KILOGRAM
+public enum AttributeType {
 }

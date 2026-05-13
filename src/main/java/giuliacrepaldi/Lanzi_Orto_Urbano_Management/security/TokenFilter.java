@@ -1,10 +1,10 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.security;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.User;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.UserRole;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.UserRole;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.UnauthorizedException;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.UsersRolesService;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.UsersService;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.UsersRolesService;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.UsersService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

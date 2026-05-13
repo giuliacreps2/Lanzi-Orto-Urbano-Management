@@ -1,6 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.User;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.AvailabilityStatus;
 import jakarta.persistence.*;
 import lombok.*;

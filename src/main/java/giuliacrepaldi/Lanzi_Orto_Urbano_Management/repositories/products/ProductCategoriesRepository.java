@@ -8,5 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface ProductCategoriesRepository extends JpaRepository<ProductCategory, UUID> {
-    ProductCategory findByName(String productCategoryName);
+
 }

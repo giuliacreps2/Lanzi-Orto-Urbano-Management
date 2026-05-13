@@ -45,10 +45,6 @@ public class ProductCategoriesService {
         return this.productCategoriesRepository.findById(productCategoryId).orElseThrow(() -> new NotFoundException("ProductCategory not found"));
     }
 
-    public ProductCategory findByName(String productCategoryName) {
-        return this.productCategoriesRepository.findByName(productCategoryName);
-    }
-
     public Page<ProductCategory> findAll(int page, int size, String sortBy) {
         if (size > 100 || size < 0) size = 10;
         if (page < 0) page = 0;

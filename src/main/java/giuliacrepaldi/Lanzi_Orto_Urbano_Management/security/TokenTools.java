@@ -1,6 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.security;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.User;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.UnauthorizedException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

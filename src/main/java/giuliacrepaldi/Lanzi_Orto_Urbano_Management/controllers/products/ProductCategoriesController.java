@@ -5,6 +5,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationExceptio
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductCategoryDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductCategoriesService;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/product-category")
+@RequestMapping("/prod")
 public class ProductCategoriesController {
 
     private final ProductCategoriesService productCategoriesService;
@@ -24,8 +25,9 @@ public class ProductCategoriesController {
     }
 
     //POST
-    @PostMapping("/create")
+    @PostMapping("/category")
     @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
     public ProductCategory saveProductCategory(@RequestBody @Validated ProductCategoryDTO body, BindingResult validation) {
         if (validation.hasErrors()) {
             List<String> errors = validation.getFieldErrors()
@@ -37,14 +39,9 @@ public class ProductCategoriesController {
 
 
     //GET
-    @GetMapping
+    @GetMapping("/{productCategoryId}")
     public ProductCategory findById(UUID productCategoryId) {
         return this.productCategoriesService.findById(productCategoryId);
-    }
-
-    @GetMapping
-    public ProductCategory findByName(@RequestParam String productCategoryName) {
-        return this.productCategoriesService.findByName(productCategoryName);
     }
 
     @GetMapping
@@ -55,7 +52,9 @@ public class ProductCategoriesController {
     }
 
     //UPDATE
-    @PutMapping
+    @PutMapping("/{productCategoryId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
     public ProductCategory update(@PathVariable UUID productCategoryId, @RequestBody @Validated ProductCategoryDTO body) {
         return this.productCategoriesService.findByIdAndUpdate(productCategoryId, body);
     }
@@ -63,6 +62,7 @@ public class ProductCategoriesController {
     //DELETE
     @DeleteMapping
     @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteById(UUID productCategoryId) {
         this.productCategoriesService.deleteProdCategory(productCategoryId);
     }

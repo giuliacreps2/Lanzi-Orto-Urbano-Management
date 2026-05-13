@@ -1,12 +1,12 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.runners;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.Role;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.User;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.RoleDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.RolesRepository;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.UsersRepository;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.RolesService;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.UsersRolesService;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.Role;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.RoleDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.login_signup.RolesRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.login_signup.UsersRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.RolesService;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.UsersRolesService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;

@@ -1,6 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.utilities;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.B2bProfile;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProfile;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.UUID;
