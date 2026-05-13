@@ -61,8 +61,8 @@ public class PackagingTypesService {
         found.setNamePackType(body.namePackType());
         found.setUnitOfMeasure(body.unitOfMeasure());
         found.setDimensionsJsonb(body.dimensionsJsonb());
-//        found.setPackagingCategory(body.packagingCategory());
-//        found.setProductVariant(body.productVariant());
+        found.setPackagingCategory(body.packagingCategory());
+        found.setProductVariant(body.productVariant());
 
         PackagingType updatedPackType = this.packagingTypesRepository.save(found);
         log.info("PackagingType updated successfully");

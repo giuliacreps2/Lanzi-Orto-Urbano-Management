@@ -45,5 +45,5 @@ public class Label {
 
     @ManyToOne
     @JoinColumn(name = "variant_id")
-    private ProductVariant variant;
+    private ProductVariant productVariant;
 }
