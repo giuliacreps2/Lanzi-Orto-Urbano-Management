@@ -8,7 +8,7 @@ public class ProductSpecs {
     public static Specification<Product> hasName(String productName) {
         return (root, query, builder) ->
         {
-            if (productName == null ||productName.isEmpty()) {
+            if (productName == null || productName.isEmpty()) {
                 return builder.conjunction();
             }
             return builder.like(builder.lower(root.get("contactName")),
@@ -16,8 +16,8 @@ public class ProductSpecs {
         };
     }
 
-    public static Specification<Product> hasPrice(Double price) {
-        return (root, query, builder) ->
-
-    }
+//    public static Specification<Product> hasPrice(Double price) {
+//        return (root, query, builder) ->
+//
+//    }
 }
