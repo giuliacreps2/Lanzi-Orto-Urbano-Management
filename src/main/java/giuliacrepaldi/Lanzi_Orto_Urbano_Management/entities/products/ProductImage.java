@@ -14,16 +14,21 @@ import java.util.UUID;
 
 
 @Entity
-@Table(name = "'product_images'")
+@Table(name = "product_images")
 public class ProductImage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID imageProdId;
 
+    @Column(nullable = false)
     private String urlImage;
     private String altText;
     private Integer sortOrder;
     private boolean isPrimary;
+
+    @ManyToOne
+    @JoinColumn(name = "product_id")
+    private Product product;
 
 }

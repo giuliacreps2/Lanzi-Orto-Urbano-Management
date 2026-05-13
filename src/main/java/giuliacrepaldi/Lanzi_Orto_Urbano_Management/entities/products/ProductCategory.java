@@ -17,14 +17,15 @@ import java.util.UUID;
 
 
 @Entity
-@Table(name = "'product_categories'")
+@Table(name = "product_categories")
 public class ProductCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID productCategoryId;
 
-    @Column
+    @Column(nullable = false)
     private String nameProdCategory;
+    @Column(nullable = false)
     private boolean requiresBatchTracking;
 
     @JdbcTypeCode(SqlTypes.JSON)

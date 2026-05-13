@@ -21,8 +21,17 @@ public class PriceList {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID priceListId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ClientCategory clientCategory;
+
+    @Column(nullable = false)
     private double price;
-    private Integer minOrdrQuantity;
+
+    private Integer minOrderQuantity;
+
+    @ManyToOne
+    @JoinColumn(name = "variant_id")
+    private ProductVariant productVariant;
 
 }

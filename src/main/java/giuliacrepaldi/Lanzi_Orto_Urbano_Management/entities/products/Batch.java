@@ -26,19 +26,30 @@ public class Batch {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID batchId;
 
+    @Column(nullable = false)
     private String batchCode;
 
     @Enumerated(EnumType.STRING)
-    @Column
+    @Column(nullable = false)
     private StatusBatch statusBatch;
 
+    @Column(nullable = false)
     private double quantityPlanned;
+    @Column(nullable = false)
     private double quantityActual;
+    @Column(nullable = false)
     private LocalDateTime startedAt;
+    @Column(nullable = false)
     private LocalDate expectedHarvestDate;
+    @Column(nullable = false)
     private LocalDate actualHarvestDate;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> batchMetadata;
+
+
+    @ManyToOne
+    @JoinColumn(name = "variant_id")
+    private ProductVariant productVariant;
 }
