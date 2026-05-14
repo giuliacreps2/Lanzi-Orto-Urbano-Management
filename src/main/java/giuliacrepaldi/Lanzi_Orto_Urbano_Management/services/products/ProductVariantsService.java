@@ -19,9 +19,13 @@ import java.util.UUID;
 public class ProductVariantsService {
 
     private final ProductVariantsRepository productVariantsRepository;
+    private final PriceListsService priceListsService;
+    private final PackagingTypesService packagingTypesService;
 
-    public ProductVariantsService(ProductVariantsRepository productVariantsRepository) {
+    public ProductVariantsService(ProductVariantsRepository productVariantsRepository, PriceListsService priceListsService, PackagingTypesService packagingTypesService) {
         this.productVariantsRepository = productVariantsRepository;
+        this.priceListsService = priceListsService;
+        this.packagingTypesService = packagingTypesService;
     }
 
     //CREATE
@@ -62,8 +66,8 @@ public class ProductVariantsService {
         found.setActiveVariant(body.activeVariant());
         found.setNetWeight(body.netWeight());
         found.setUnit(body.unit());
-        found.setPackagingType(body.packagingType());
-        found.setPriceList(body.priceList());
+        found.setPackagingType(packagingTypesService.findById(body.packTypeId()));
+        found.setPriceList(priceListsService.findById(body.priceListId()));
 
         ProductVariant updated = this.productVariantsRepository.save(found);
         log.info("Product Variant updated successfully, {}", updated);

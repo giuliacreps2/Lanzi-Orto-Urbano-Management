@@ -18,9 +18,11 @@ import java.util.UUID;
 public class ProductCategoryAttributesService {
 
     private final ProductCategoryAttributesRepository productCategoryAttributesRepository;
+    private final ProductCategoriesService productCategoriesService;
 
-    public ProductCategoryAttributesService(ProductCategoryAttributesRepository productCategoryAttributesRepository) {
+    public ProductCategoryAttributesService(ProductCategoryAttributesRepository productCategoryAttributesRepository, ProductCategoriesService productCategoriesService) {
         this.productCategoryAttributesRepository = productCategoryAttributesRepository;
+        this.productCategoriesService = productCategoriesService;
     }
 
     //CREATE
@@ -70,7 +72,7 @@ public class ProductCategoryAttributesService {
         found.setMinValue(body.minValue());
         found.setMaxValue(body.maxValue());
         found.setUnit(body.unit());
-        found.setProductCategory(body.productCategory());
+        found.setProductCategory(productCategoriesService.findById(body.productCategoryId()));
 
         ProductCategoryAttribute updated = this.productCategoryAttributesRepository.save(found);
         log.info("Product Category Attribute updated successfully, {}", updated);

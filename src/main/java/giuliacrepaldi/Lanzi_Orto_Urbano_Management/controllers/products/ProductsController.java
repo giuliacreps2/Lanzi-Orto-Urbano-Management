@@ -26,7 +26,7 @@ public class ProductsController {
 
     //POST
     @PostMapping("/new-prod")
-    @PreAuthorize("hasAthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public Product createProduct(@RequestBody @Validated ProductDTO body, BindingResult validation) {
         if (validation.hasErrors()) {
@@ -51,7 +51,7 @@ public class ProductsController {
     }
 
     //UPDATE
-    @PutMapping("/{packTypeId}")
+    @PutMapping("/{productId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public Product update(@PathVariable UUID productId, @RequestBody @Validated ProductDTO body) {
@@ -59,7 +59,7 @@ public class ProductsController {
     }
 
     //DELETE
-    @DeleteMapping
+    @DeleteMapping("/{productId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteById(UUID productId) {

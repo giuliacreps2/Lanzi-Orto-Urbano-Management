@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+@RestController
 @RequestMapping("/batches")
 public class BatchesController {
 
@@ -25,7 +26,7 @@ public class BatchesController {
 
     //POST
     @PostMapping("/new-batch")
-    @PreAuthorize("hasAthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public Batch createBatch(@RequestBody @Validated BatchDTO body, BindingResult validation) {
         if (validation.hasErrors()) {
@@ -51,7 +52,7 @@ public class BatchesController {
     }
 
     //UPDATE
-    @PostMapping("/{batchId}")
+    @PutMapping("/{batchId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public Batch update(@PathVariable UUID batchId, @RequestBody @Validated BatchDTO body) {
@@ -60,7 +61,7 @@ public class BatchesController {
 
 
     //DELETE
-    @DeleteMapping
+    @DeleteMapping("/{batchId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public void deleteById(@PathVariable UUID batchId) {

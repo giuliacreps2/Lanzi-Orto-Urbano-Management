@@ -18,9 +18,11 @@ import java.util.UUID;
 public class PackagingTypesService {
 
     private final PackagingTypesRepository packagingTypesRepository;
+    private final ProductVariantsService productVariantsService;
 
-    public PackagingTypesService(PackagingTypesRepository packagingTypesRepository) {
+    public PackagingTypesService(PackagingTypesRepository packagingTypesRepository, ProductVariantsService productVariantsService) {
         this.packagingTypesRepository = packagingTypesRepository;
+        this.productVariantsService = productVariantsService;
     }
 
     //CREATE
@@ -62,7 +64,7 @@ public class PackagingTypesService {
         found.setUnitOfMeasure(body.unitOfMeasure());
         found.setDimensionsJsonb(body.dimensionsJsonb());
         found.setPackagingCategory(body.packagingCategory());
-        found.setProductVariant(body.productVariant());
+        found.setProductVariant(productVariantsService.findById(body.productVariantId()));
 
         PackagingType updatedPackType = this.packagingTypesRepository.save(found);
         log.info("PackagingType updated successfully");

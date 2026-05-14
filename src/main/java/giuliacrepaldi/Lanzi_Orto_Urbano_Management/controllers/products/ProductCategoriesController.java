@@ -60,7 +60,7 @@ public class ProductCategoriesController {
     }
 
     //DELETE
-    @DeleteMapping
+    @DeleteMapping("/{productCategoryId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteById(UUID productCategoryId) {

@@ -26,7 +26,7 @@ public class PriceListsController {
 
     //POST
     @PostMapping("/new-prz")
-    @PreAuthorize("hasAthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public PriceList createPriceList(@RequestBody @Validated PriceListDTO body, BindingResult validation) {
         if (validation.hasErrors()) {
@@ -55,13 +55,13 @@ public class PriceListsController {
     @PutMapping("/{priceListId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public PriceList update(@RequestBody @Validated PriceListDTO body, BindingResult validation) {
-        return this.priceListsService.saveNewPriceList(body);
+    public PriceList update(@PathVariable UUID priceListId, @RequestBody @Validated PriceListDTO body) {
+        return this.priceListsService.findByIdAndUpdatePriceList(priceListId, body);
     }
 
 
     //DELETE
-    @DeleteMapping
+    @DeleteMapping("/{priceListId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteById(UUID priceListId) {

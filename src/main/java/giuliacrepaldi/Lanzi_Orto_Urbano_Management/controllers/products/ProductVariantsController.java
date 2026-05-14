@@ -26,7 +26,7 @@ public class ProductVariantsController {
 
     //POST
     @PostMapping("/new-var")
-    @PreAuthorize("hasAthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductVariant createProductVariant(@RequestBody @Validated ProductVariantDTO body, BindingResult validation) {
         if (validation.hasErrors()) {
@@ -59,7 +59,7 @@ public class ProductVariantsController {
     }
 
     //DELETE
-    @DeleteMapping
+    @DeleteMapping("/{productVariantId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProductVariant(UUID productVariantId) {

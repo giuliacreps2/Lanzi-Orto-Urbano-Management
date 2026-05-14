@@ -51,7 +51,7 @@ public class Product {
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Column(nullable = false)
+    @Column
     private LocalDateTime deletedAt;
 
 

@@ -111,6 +111,17 @@
             <version>1.39.0</version>
             <scope>compile</scope>
         </dependency>
+        <!--Copyright (C) 2010 ZXing authors source: https://github.com/zxing/zxing/blob/master/pom.xml-->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.3</version>
+        </dependency>
     </dependencies>
 
     <build>

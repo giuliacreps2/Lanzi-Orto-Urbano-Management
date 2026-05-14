@@ -18,9 +18,11 @@ import java.util.UUID;
 public class BatchesService {
 
     private final BatchesRepository batchesRepository;
+    private final ProductVariantsService productVariantsService;
 
-    public BatchesService(BatchesRepository batchesRepository) {
+    public BatchesService(BatchesRepository batchesRepository, ProductVariantsService productVariantsService) {
         this.batchesRepository = batchesRepository;
+        this.productVariantsService = productVariantsService;
     }
 
 
@@ -59,7 +61,7 @@ public class BatchesService {
     //UPDATE
 
     public Batch findByIdAndUpdateBAtch(UUID batchId, BatchDTO body) {
-        if (!batchesRepository.existsById(batchId)) throw new NotFoundException("Label not found");
+        if (!batchesRepository.existsById(batchId)) throw new NotFoundException("Batch not found");
 
         Batch found = this.findById(batchId);
 
@@ -71,10 +73,10 @@ public class BatchesService {
         found.setExpectedHarvestDate(body.expectedHarvestDate());
         found.setActualHarvestDate(body.actualHarvestDate());
         found.setBatchMetadata(body.batchMetadata());
-        found.setProductVariant(body.productVariant());
+        found.setProductVariant(productVariantsService.findById(body.productVariantId()));
 
         Batch updated = this.batchesRepository.save(found);
-        log.info("Label updated successfully, {}", updated);
+        log.info("Batch updated successfully, {}", updated);
         return updated;
     }
 
@@ -82,7 +84,7 @@ public class BatchesService {
     //DELETE
     public void deleteBatchById(UUID batchId) {
         if (!batchesRepository.existsById(batchId)) throw new NotFoundException("Batch not found");
-        log.info("Label deleted successfully, {}", batchId);
+        log.info("Batch deleted successfully, {}", batchId);
         batchesRepository.deleteById(batchId);
     }
 

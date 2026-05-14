@@ -26,7 +26,7 @@ public class ProductCategoryAttributesController {
 
     //POST
     @PostMapping("/new-attr")
-    @PreAuthorize("hasAthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductCategoryAttribute createProdCatAttribute(@RequestBody @Validated ProductCategoryAttributeDTO body, BindingResult validation) {
         if (validation.hasErrors()) {
@@ -53,7 +53,7 @@ public class ProductCategoryAttributesController {
 
     //UPDATE
 
-    @PutMapping
+    @PutMapping("/{productCategoryAttributeId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductCategoryAttribute updateProdCatAttribute(@PathVariable UUID productCategoryAttributeId, @RequestBody @Validated ProductCategoryAttributeDTO body) {
@@ -62,9 +62,9 @@ public class ProductCategoryAttributesController {
 
 
     //DELETE
-    @DeleteMapping
+    @DeleteMapping("/{productCategoryAttributeId}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProdCatAttribute(UUID productCategoryAttributeId) {
         this.productCategoryAttributesService.deleteProductById(productCategoryAttributeId);
     }

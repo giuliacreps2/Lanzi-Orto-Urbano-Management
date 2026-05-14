@@ -18,9 +18,11 @@ import java.util.UUID;
 public class PriceListsService {
 
     private final PriceListsRepository priceListsRepository;
+    private final ProductVariantsService productVariantsService;
 
-    public PriceListsService(PriceListsRepository priceListsRepository) {
+    public PriceListsService(PriceListsRepository priceListsRepository, ProductVariantsService productVariantsService) {
         this.priceListsRepository = priceListsRepository;
+        this.productVariantsService = productVariantsService;
     }
 
     //CREATE
@@ -59,7 +61,7 @@ public class PriceListsService {
         found.setPrice(body.price());
         found.setMinOrderQuantity(body.minOrderQuantity());
         found.setClientCategory(body.clientCategory());
-        found.setProductVariant(body.productVariant());
+        found.setProductVariant(productVariantsService.findById(body.productVariantId()));
 
         PriceList updated = this.priceListsRepository.save(found);
         log.info("Product Variant updated successfully, {}", updated);

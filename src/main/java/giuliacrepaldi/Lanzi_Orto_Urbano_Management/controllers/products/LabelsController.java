@@ -28,7 +28,7 @@ public class LabelsController {
 
     //POST
     @PostMapping("/new-lab")
-    @PreAuthorize("hasAthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public Label createLabel(@RequestBody @Validated LabelDTO body, BindingResult validation) {
         if (validation.hasErrors()) {
@@ -61,7 +61,7 @@ public class LabelsController {
     }
 
     //DELETE
-    @DeleteMapping
+    @DeleteMapping("/{labelId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteById(@PathVariable UUID labelId) {

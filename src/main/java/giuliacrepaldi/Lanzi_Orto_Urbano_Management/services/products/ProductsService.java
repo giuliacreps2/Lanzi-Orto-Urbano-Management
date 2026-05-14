@@ -23,10 +23,12 @@ public class ProductsService {
 
     private final ProductsRepository productsRepository;
     private final ProductCategoryAttributesRepository productCategoryAttributesRepository;
+    private final ProductCategoriesService productCategoriesService;
 
-    public ProductsService(ProductsRepository productsRepository, ProductCategoryAttributesRepository productCategoryAttributesRepository) {
+    public ProductsService(ProductsRepository productsRepository, ProductCategoryAttributesRepository productCategoryAttributesRepository, ProductCategoriesService productCategoriesService) {
         this.productsRepository = productsRepository;
         this.productCategoryAttributesRepository = productCategoryAttributesRepository;
+        this.productCategoriesService = productCategoriesService;
     }
 
     //CREATE
@@ -40,13 +42,12 @@ public class ProductsService {
                 .availabilityStatus(body.availabilityStatus())
                 .productIsAvailable(body.productIsAvailable())
                 .createdAt(body.createdAt())
-                .productCategory(body.productCategory())
                 .build();
 
         Product savedProduct = productsRepository.save(newProduct);
         log.info("Product saved successfully, {}", savedProduct);
 
-        return this.productsRepository.save(savedProduct);
+        return savedProduct;
     }
 
     //REQUESTS
@@ -76,7 +77,7 @@ public class ProductsService {
         found.setProductIsAvailable(body.productIsAvailable());
         found.setTechnicalProdDetails(body.technicalProdDetails());
         found.setCreatedAt(body.createdAt());
-        found.setProductCategory(body.productCategory());
+        found.setProductCategory(productCategoriesService.findById(body.productCategoryId()));
 
         Product updated = this.productsRepository.save(found);
         log.info("Product updated successfully, {}", updated);

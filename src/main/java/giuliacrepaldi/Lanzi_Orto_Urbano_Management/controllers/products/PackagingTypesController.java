@@ -27,7 +27,7 @@ public class PackagingTypesController {
 
     //POST
     @PostMapping("/new-type")
-    @PreAuthorize("hasAthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public PackagingType createPackagingType(@RequestBody @Validated PackagingTypeDTO body, BindingResult validation) {
         if (validation.hasErrors()) {
@@ -60,7 +60,7 @@ public class PackagingTypesController {
     }
 
     //DELETE
-    @DeleteMapping
+    @DeleteMapping("/{packTypeId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteById(UUID packTypeId) {

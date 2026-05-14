@@ -26,6 +26,7 @@ public class ProductImage {
     private String altText;
     private Integer sortOrder;
     private boolean isPrimary;
+    private String cloudinaryPublicId;
 
     @ManyToOne
     @JoinColumn(name = "product_id")
