@@ -3,9 +3,11 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Label;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.LabelDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.LabelsRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.inventory.InventoryService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -14,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -23,12 +26,14 @@ public class LabelsService {
     private final LabelsRepository labelsRepository;
     private final BatchesService batchesService;
     private final ProductVariantsService productVariantsService;
+    private final InventoryService inventoryService;
 
 
-    public LabelsService(LabelsRepository labelsRepository, BatchesService batchesService, ProductVariantsService productVariantsService) {
+    public LabelsService(LabelsRepository labelsRepository, BatchesService batchesService, ProductVariantsService productVariantsService, InventoryService inventoryService) {
         this.labelsRepository = labelsRepository;
         this.batchesService = batchesService;
         this.productVariantsService = productVariantsService;
+        this.inventoryService = inventoryService;
     }
 
 
@@ -102,5 +107,33 @@ public class LabelsService {
         log.info("Label deleted successfully, {}", labelId);
         labelsRepository.deleteById(labelId);
     }
+
+
+    //ETICHETTE REALI
+    public void processLabelScan(UUID labelId) {
+
+        Label found = this.findById(labelId);
+
+        //Controllo etichetta già scansionata
+        if (found.isInventoryDecremented()) {
+            throw new BadRequestException("This label was already decremented");
+        }
+
+        //Recupero la configurazione del JSNOB dalla categoria
+        Map<String, Object> categoryMetadata = found.getProductVariant()
+                .getProduct()
+                .getProductCategory()
+                .getMetadataProdCategory();
+
+        //Chiamo il servizio dell'inventario
+        inventoryService.processInventoryDecrement(found, categoryMetadata);
+
+        //Definisco il decremento nell'inventario e salvo
+        found.setInventoryDecremented(true);
+        labelsRepository.save(found);
+
+        log.info("Label scan done successfully, {}", found);
+    }
+
 
 }

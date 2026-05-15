@@ -5,13 +5,19 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Label;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.LabelDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.LabelsService;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.utilities.BarcodeGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,6 +26,8 @@ import java.util.UUID;
 public class LabelsController {
 
     private final LabelsService labelsService;
+    @Autowired
+    private BarcodeGenerator barcodeGenerator;
 
     public LabelsController(LabelsService labelsService) {
         this.labelsService = labelsService;
@@ -69,4 +77,14 @@ public class LabelsController {
     }
 
 
+    //STAMPA ETICHETTE
+    @GetMapping(value = "/{labelId}/label", produces = MediaType.IMAGE_JPEG_VALUE)
+    public byte[] getLabel(@PathVariable UUID labelId) throws Exception {
+        Label label = this.labelsService.findById(labelId);
+        BufferedImage writer = barcodeGenerator.generateBarcode128(label.getBarCodeGs1());
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(writer, "png", out);
+
+        return out.toByteArray();
+    }
 }

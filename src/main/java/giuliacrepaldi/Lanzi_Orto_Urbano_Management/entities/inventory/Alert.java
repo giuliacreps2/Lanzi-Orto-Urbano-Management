@@ -26,21 +26,33 @@ public class Alert {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID alertId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TypeAlert typeAlert;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatusAlert statusAlert;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ChannelAlert channelAlert;
+
     @Column(nullable = false)
     private LocalDateTime scheduledAlertAt;
-    @Column(nullable = false)
+
+    @Column
     private LocalDateTime sentAlertAt;
 
 
     @ManyToOne
     @JoinColumn(name = "batch_id")
     private Batch batch;
+
+    @ManyToOne
+    @JoinColumn(name = "inventory_id")
+    private Inventory inventory;
+
 //
 //    @ManyToOne
 //    @JoinColumn(name = "order_id")
