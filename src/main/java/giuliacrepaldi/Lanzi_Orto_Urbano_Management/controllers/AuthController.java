@@ -20,10 +20,16 @@ public class AuthController {
         this.authService = authService;
     }
 
+//    @PostMapping("/login")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public LoginRespDTO login(@RequestBody LoginDTO body) {
+//        return new LoginRespDTO(this.authService.checkCredentialsAndGenerateToken(body));
+//    }
+
     @PostMapping("/login")
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.OK)
     public LoginRespDTO login(@RequestBody LoginDTO body) {
-        return new LoginRespDTO(this.authService.checkCredentialsAndGenerateToken(body));
+        return this.authService.login(body);
     }
 
 

@@ -1,6 +1,7 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.*;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.AccountType;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.TypeActivity;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -55,22 +57,73 @@ public class AuthService {
     }
 
     //LOGIN ONLY
-    public String checkCredentialsAndGenerateToken(LoginDTO body) {
 
-        try {
-            User found = this.usersService.findByEmail(body.email());
-            //Controllo psw
-            if (this.bcrypt.matches(body.password(), found.getPassword())) {
-                return this.tokenTools.generateToken(found);
-            } else {
-                throw new UnauthorizedException("Invalid Credentials");
-            }
+    public LoginRespDTO login(LoginDTO body) {
+        User found = this.usersService.findByEmail(body.email());
 
-        } catch (NotFoundException ex) {
-            throw new NotFoundException("Invalid Credentials");
+        log.info("EMAIL BODY" + body.email());
+        log.info("PASSWORD BODY" + body.password());
+        log.info("USER FOUND" + found.getEmail());
+        log.info("PASSWORD FOUND" + found.getPassword());
+        log.info("MATCHES" + this.bcrypt.matches(body.password(), found.getPassword()));
+
+        if (!this.bcrypt.matches(body.password(), found.getPassword())) {
+            throw new UnauthorizedException("Invalid Credentials");
         }
 
+        String token = this.tokenTools.generateToken(found);
+
+        List<String> roles = this.usersRolesService
+                .findRoleByUser(found)
+                .stream()
+                .map(userRole -> userRole.getRole().getRoleName())
+                .toList();
+
+        AccountType accountType;
+
+        if (roles.contains(AccountType.ADMIN.toString())) {
+            accountType = AccountType.ADMIN;
+        } else if (found.getB2bProfile() != null) {
+            accountType = AccountType.B2B;
+        } else if (found.getB2cProfile() != null) {
+            accountType = AccountType.B2C;
+        } else {
+            accountType = AccountType.UNKNOW;
+        }
+
+        StatusB2b b2bStatus = found.getB2bProfile() != null ? found.getB2bProfile().getStatusB2b() : null;
+
+        LoggedUserDTO user = new LoggedUserDTO(
+                found.getUserId(),
+                found.getEmail(),
+                roles,
+                accountType,
+                b2bStatus,
+                found.isActive(),
+                found.isEmailVerified()
+        );
+
+        return new LoginRespDTO(token, user);
+
     }
+
+
+//    public String checkCredentialsAndGenerateToken(LoginDTO body) {
+//
+//        try {
+//            User found = this.usersService.findByEmail(body.email());
+//            //Controllo psw
+//            if (this.bcrypt.matches(body.password(), found.getPassword())) {
+//                return this.tokenTools.generateToken(found);
+//            } else {
+//                throw new UnauthorizedException("Invalid Credentials");
+//            }
+//
+//        } catch (NotFoundException ex) {
+//            throw new NotFoundException("Invalid Credentials");
+//        }
+//
+//    }
 
     //SIGN UP B2C
     public String registerNewB2cProfile(RegisterUserDTO body) {

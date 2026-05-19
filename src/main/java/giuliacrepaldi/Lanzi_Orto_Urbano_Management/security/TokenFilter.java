@@ -9,6 +9,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class TokenFilter extends OncePerRequestFilter {
 
@@ -53,11 +55,15 @@ public class TokenFilter extends OncePerRequestFilter {
         Authentication authenticationToken = new UsernamePasswordAuthenticationToken(user, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
+
+        log.info("TOKEN FILTER ACTIVE ON:" + request.getServletPath());
         filterChain.doFilter(request, response);
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String servletPath = request.getServletPath();
+        log.info("SHOULD NOT FILTER - servletPath: " + servletPath);
         return new AntPathMatcher().match("/auth/**", request.getServletPath());
     }
 }

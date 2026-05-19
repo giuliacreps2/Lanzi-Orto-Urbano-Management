@@ -1,5 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories;
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -11,4 +12,5 @@ import java.util.UUID;
 public interface UsersRolesRepository extends JpaRepository<UserRole, UUID> {
     List<UserRole> findByUser_UserId(UUID userId);
 
+    List<UserRole> findByUser(User user);
 }
