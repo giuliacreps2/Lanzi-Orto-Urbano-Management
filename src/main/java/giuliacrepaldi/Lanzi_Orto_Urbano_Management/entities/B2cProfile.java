@@ -24,7 +24,7 @@ public class B2cProfile {
 
     @Column(nullable = false)
     private String name;
-    @Column(nullable = false)
+    @Column
     private String surname;
 
     private String phoneNumber;

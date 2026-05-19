@@ -17,10 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -142,7 +139,7 @@ public class AuthService {
                 .createdAt(LocalDateTime.now())
                 .clientCategory(ClientCategory.B2C)
                 .metadata(Map.of("name", body.name(),
-                        "surname", body.surname(), "password", Objects.requireNonNull(this.bcrypt.encode(body.password())), "phoneNumber", body.phoneNumber()
+                        "password", Objects.requireNonNull(this.bcrypt.encode(body.password())), "phoneNumber", body.phoneNumber()
                         , "privacyAccepted", body.privacyAccepted()))
                 .build();
 
@@ -186,7 +183,6 @@ public class AuthService {
         if (found.getClientCategory() == ClientCategory.B2C) {
             B2cProfile newB2cProfile = new B2cProfile();
             newB2cProfile.setName((String) metadata.get("name"));
-            newB2cProfile.setSurname((String) metadata.get("surname"));
             newB2cProfile.setPhoneNumber((String) metadata.get("phoneNumber"));
             newB2cProfile.setLoyaltyPoints(20L);
             newB2cProfile.setUser(savedNewUser);
@@ -212,6 +208,8 @@ public class AuthService {
 
     //SIGN UP B2B
     public String registerNewB2bProfile(RegisterB2bProfileDTO body) {
+        boolean hasVatNumber = body.vatNumber() != null && !body.vatNumber().isBlank();
+        boolean hasFiscalCode = body.fiscalCode() != null && !body.fiscalCode().isBlank();
 
         if (this.usersRepository.existsByEmail(body.contactEmail()))
             throw new BadRequestException("User with this email already exists");
@@ -219,8 +217,35 @@ public class AuthService {
         if (this.registrationRequestsRepository.existsByEmailAndIsUsedFalseAndTokenExpiresAtAfter(body.contactEmail(), LocalDateTime.now()))
             throw new BadRequestException("Check out in your registration request. Your token is here");
 
-        if (this.b2bProfilesRepository.existsByFiscalCode(body.fiscalCode()) || this.b2bProfilesRepository.existsByVatNumber(body.vatNumber()))
-            throw new BadRequestException("User with this vat number or fiscal code already exists");
+        if (!hasVatNumber && !hasFiscalCode) {
+            throw new BadRequestException("VAT number or fiscal code is required");
+        }
+
+        if (hasVatNumber && this.b2bProfilesRepository.existsByVatNumber(body.vatNumber())) {
+            throw new BadRequestException("VAT number already exists");
+        }
+
+        if (hasFiscalCode && this.b2bProfilesRepository.existsByFiscalCode(body.fiscalCode())) {
+            throw new BadRequestException("Fiscal code already exists");
+        }
+
+//        if (this.b2bProfilesRepository.existsByFiscalCode(body.fiscalCode()) || this.b2bProfilesRepository.existsByVatNumber(body.vatNumber()))
+//            throw new BadRequestException("User with this vat number or fiscal code already exists");
+
+
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("contactName", body.contactName());
+        metadata.put("contactSurname", body.contactSurname());
+        metadata.put("contactEmail", body.contactEmail());
+        metadata.put("password", this.bcrypt.encode(body.password()));
+        metadata.put("contactPhone", body.contactPhone());
+        metadata.put("vatNumber", body.vatNumber());
+        metadata.put("fiscalCode", body.fiscalCode());
+        metadata.put("companyName", body.companyName());
+        metadata.put("typeActivity", body.typeActivity() != null ? body.typeActivity().name() : null);
+        metadata.put("municipalityId", body.municipalityId() != null ? body.municipalityId() : null);
+        metadata.put("privacyAccepted", body.privacyAccepted());
+
 
         RegistrationRequest newR = RegistrationRequest.builder()
                 .email(body.contactEmail())
@@ -229,18 +254,8 @@ public class AuthService {
                 .isUsed(false)
                 .createdAt(LocalDateTime.now())
                 .clientCategory(ClientCategory.B2B)
-                .metadata(Map.of(
-                        "contactName", body.contactName(),
-                        "contactSurname", body.contactSurname(),
-                        "contactEmail", body.contactEmail(),
-                        "password", Objects.requireNonNull(this.bcrypt.encode(body.password())),
-                        "contactPhone", body.contactPhone(),
-                        "vatNumber", Objects.requireNonNullElse(body.vatNumber(), ""),
-                        "fiscalCode", Objects.requireNonNullElse(body.fiscalCode(), ""),
-                        "companyName", body.companyName(),
-                        "typeActivity", body.typeActivity().name(),
-                        "privacyAccepted", body.privacyAccepted()
-                )).build();
+                .metadata(metadata)
+                .build();
 
         RegistrationRequest savedR = this.registrationRequestsRepository.save(newR);
 
