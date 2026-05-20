@@ -11,6 +11,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.UnauthorizedExcept
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.security.TokenTools;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.tools.EmailSender;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,8 +37,9 @@ public class AuthService {
     private final B2bProfilesRepository b2bProfilesRepository;
     private final AdminProfilesRepository adminProfilesRepository;
     private final AdminProfilesService adminProfilesService;
+    private final EmailSender emailSender;
 
-    public AuthService(UsersService usersService, UsersRepository usersRepository, TokenTools tokenTools, RegistrationRequestsService registrationRequestsService, RegistrationRequestsRepository registrationRequestsRepository, PasswordEncoder bcrypt, RolesRepository rolesRepository, RolesService rolesService, B2cProfilesRepository b2cProfilesRepository, UsersRolesService usersRolesService, B2bProfilesRepository b2bProfilesRepository, AdminProfilesRepository adminProfilesRepository, AdminProfilesService adminProfilesService) {
+    public AuthService(UsersService usersService, UsersRepository usersRepository, TokenTools tokenTools, RegistrationRequestsService registrationRequestsService, RegistrationRequestsRepository registrationRequestsRepository, PasswordEncoder bcrypt, RolesRepository rolesRepository, RolesService rolesService, B2cProfilesRepository b2cProfilesRepository, UsersRolesService usersRolesService, B2bProfilesRepository b2bProfilesRepository, AdminProfilesRepository adminProfilesRepository, AdminProfilesService adminProfilesService, EmailSender emailSender) {
         this.usersService = usersService;
         this.usersRepository = usersRepository;
         this.tokenTools = tokenTools;
@@ -51,6 +53,7 @@ public class AuthService {
         this.b2bProfilesRepository = b2bProfilesRepository;
         this.adminProfilesRepository = adminProfilesRepository;
         this.adminProfilesService = adminProfilesService;
+        this.emailSender = emailSender;
     }
 
     //LOGIN ONLY
@@ -123,7 +126,46 @@ public class AuthService {
 //    }
 
     //SIGN UP B2C
-    public String registerNewB2cProfile(RegisterUserDTO body) {
+//    public String registerNewB2cProfile(RegisterUserDTO body) {
+//
+//        if (this.usersRepository.existsByEmail(body.email()))
+//            throw new BadRequestException("User with this email already exists");
+//
+//        if (this.registrationRequestsRepository.existsByEmailAndIsUsedFalseAndTokenExpiresAtAfter(body.email(), LocalDateTime.now()))
+//            throw new BadRequestException("Check out in your registration request. Your token is here");
+//
+//        RegistrationRequest newR = RegistrationRequest.builder()
+//                .email(body.email())
+//                .verificationToken(UUID.randomUUID().toString())
+//                .tokenExpiresAt(LocalDateTime.now().plusDays(1))
+//                .isUsed(false)
+//                .createdAt(LocalDateTime.now())
+//                .clientCategory(ClientCategory.B2C)
+//                .metadata(Map.of("name", body.name(),
+//                        "password", Objects.requireNonNull(this.bcrypt.encode(body.password())), "phoneNumber", body.phoneNumber()
+//                        , "privacyAccepted", body.privacyAccepted()))
+//                .build();
+//
+//
+//        log.info("VERIFYING TOKEN FOR THE USER" + newR.getVerificationToken());
+//        log.info("NAME BODY" + newR.getMetadata().get("name"));
+//        log.info("PHONE BODY" + newR.getMetadata().get("phoneNumber"));
+//        log.info("EMAIL BODY" + newR.getMetadata().get("email"));
+//        log.info("PASSWORD BODY" + newR.getMetadata().get("password"));
+//        log.info("PRIVACY BODY" + newR.getMetadata().get("privacyAccepted"));
+//
+//
+//        RegistrationRequest savedR = this.registrationRequestsRepository.save(newR);
+//
+//        //            this.emailSender.sendRegistrationEmail(savedR);
+//
+//        log.info("New B2C registration request for: {}", body.email());
+//        return "Your registration has taken place. Please check your email to verify your account.";
+//    }
+
+
+    // SIGN UP B2C
+    public RegistrationRequest registerNewB2cProfile(RegisterUserDTO body) {
 
         if (this.usersRepository.existsByEmail(body.email()))
             throw new BadRequestException("User with this email already exists");
@@ -138,17 +180,29 @@ public class AuthService {
                 .isUsed(false)
                 .createdAt(LocalDateTime.now())
                 .clientCategory(ClientCategory.B2C)
-                .metadata(Map.of("name", body.name(),
-                        "password", Objects.requireNonNull(this.bcrypt.encode(body.password())), "phoneNumber", body.phoneNumber()
-                        , "privacyAccepted", body.privacyAccepted()))
+                .metadata(Map.of(
+                        "name", body.name(),
+                        "password", Objects.requireNonNull(this.bcrypt.encode(body.password())),
+                        "phoneNumber", body.phoneNumber(),
+                        "privacyAccepted", body.privacyAccepted()
+                ))
                 .build();
+
+        log.info("VERIFYING TOKEN FOR THE USER: " + newR.getVerificationToken());
+        log.info("NAME BODY: " + newR.getMetadata().get("name"));
+        log.info("PHONE BODY: " + newR.getMetadata().get("phoneNumber"));
+        log.info("EMAIL BODY: " + newR.getEmail());
+        log.info("PASSWORD BODY: " + newR.getMetadata().get("password"));
+        log.info("PRIVACY BODY: " + newR.getMetadata().get("privacyAccepted"));
 
         RegistrationRequest savedR = this.registrationRequestsRepository.save(newR);
 
-        //            this.emailSender.sendRegistrationEmail(savedR);
+        this.emailSender.sendRegistrationEmail(savedR);
 
         log.info("New B2C registration request for: {}", body.email());
-        return "Your registration has taken place. Please check your email to verify your account.";
+
+        // Ritorna l'oggetto persistito sul DB (avrà anche l'ID generato se usi una chiave sequenziale/UUID)
+        return savedR;
     }
 
 
@@ -164,6 +218,7 @@ public class AuthService {
 
         if (found.getTokenExpiresAt().isBefore(LocalDateTime.now()))
             throw new BadRequestException("Token is expired");
+
 
         Map<String, Object> metadata = found.getMetadata();
 
@@ -258,8 +313,7 @@ public class AuthService {
                 .build();
 
         RegistrationRequest savedR = this.registrationRequestsRepository.save(newR);
-
-        //            this.emailSender.sendRegistrationEmail(savedR);
+        this.emailSender.sendB2bPendingEmail(body.contactEmail(), body.contactName());
 
         log.info("New B2B registration request for: {}", body.contactEmail());
         return "Your registration has taken place. Check your email address.";
@@ -306,7 +360,11 @@ public class AuthService {
             newB2bProfile.setLoyaltyPoints(20L);
             newB2bProfile.setStatusB2b(StatusB2b.PENDING);
             newB2bProfile.setUser(savedNewUser);
+
             b2bProfilesRepository.save(newB2bProfile);
+
+            this.emailSender.sendB2bPendingEmail(found.getEmail(), newB2bProfile.getContactName());
+            this.emailSender.notifyAdminForApproval(newB2bProfile);
         }
 
         Role newRole = this.rolesRepository.findByRoleName("USER")
@@ -314,6 +372,7 @@ public class AuthService {
 
 
 //        this.emailSender.sendRegistrationEmail(savedR);
+
 
         //Devo inviare una mail all'amministratore per la verifica del p.iva o del cf
         //Devo cambiare mettere lo stato pending, finchè l'amministratore non dà conferma
@@ -328,7 +387,7 @@ public class AuthService {
         found.setUsedAt(LocalDateTime.now());
         this.registrationRequestsRepository.save(found);
 
-        //      this.emailSender.notifyAdminForApproval(savedNewUser);
+//              this.emailSender.notifyAdminForApproval(savedNewUser);
 
         return new NewUserRespDTO(savedNewUser.getUserId());
     }
@@ -350,10 +409,36 @@ public class AuthService {
         user.setUpdatedAt(LocalDateTime.now());
         this.usersRepository.save(user);
 
-        //this.emailSender.sendApprovalEmail(user);
+        this.emailSender.sendApprovalEmail(user.getEmail(), user.getB2bProfile().getContactName());
 
         log.info("B2B profile approved for userId: {}", userId);
         return "B2B profile has been approved successfully";
+    }
+
+
+    //REJECTED
+    @Transactional
+    public String rejectB2bProfile(UUID userId, String reason) {
+        User user = this.usersService.findById(userId);
+
+        if (user.getB2bProfile() == null)
+            throw new BadRequestException("This user has no B2B profile");
+
+        if (user.getB2bProfile().getStatusB2b() == StatusB2b.APPROVED)
+            throw new BadRequestException("Cannot reject an already approved profile");
+
+        if (user.getB2bProfile().getStatusB2b() == StatusB2b.REJECTED)
+            throw new BadRequestException("Profile already rejected");
+
+        user.getB2bProfile().setStatusB2b(StatusB2b.REJECTED);
+        user.getB2bProfile().setNotes(reason);
+        user.setUpdatedAt(LocalDateTime.now());
+        this.usersRepository.save(user);
+
+        this.emailSender.sendRejectionEmail(user.getEmail(), user.getB2bProfile().getContactName(), reason);
+
+        log.info("B2B profile rejected for userId: {}", userId);
+        return "B2B profile has been rejected";
     }
 
 

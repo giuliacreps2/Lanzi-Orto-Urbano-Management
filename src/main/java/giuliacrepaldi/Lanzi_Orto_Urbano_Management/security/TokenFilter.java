@@ -2,7 +2,6 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.security;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.UserRole;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.UnauthorizedException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.UsersRolesService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.UsersService;
 import jakarta.servlet.FilterChain;
@@ -40,8 +39,14 @@ public class TokenFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer "))
-            throw new UnauthorizedException("Invalid Token. Please provide a valid Token");
+
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+//            throw new UnauthorizedException("Invalid Token. Please provide a valid Token");
+
 
         String accessToken = authHeader.replace("Bearer ", "");
 
@@ -64,6 +69,10 @@ public class TokenFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String servletPath = request.getServletPath();
         log.info("SHOULD NOT FILTER - servletPath: " + servletPath);
-        return new AntPathMatcher().match("/auth/**", request.getServletPath());
+
+        AntPathMatcher antPathMatcher = new AntPathMatcher();
+
+        return antPathMatcher.match("/auth/**", request.getServletPath())
+                || antPathMatcher.match("/register/**", request.getServletPath());
     }
 }

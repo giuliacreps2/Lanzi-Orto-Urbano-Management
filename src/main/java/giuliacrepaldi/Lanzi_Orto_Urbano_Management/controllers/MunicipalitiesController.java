@@ -1,12 +1,11 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.controllers;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.Municipality;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.MunicipalitiesRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.MunicipalitiesService;
 import org.springframework.data.domain.Page;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -15,9 +14,11 @@ import java.util.List;
 public class MunicipalitiesController {
 
     private final MunicipalitiesService municipalitiesService;
+    private final MunicipalitiesRepository municipalitiesRepository;
 
-    public MunicipalitiesController(MunicipalitiesService municipalitiesService) {
+    public MunicipalitiesController(MunicipalitiesService municipalitiesService, MunicipalitiesRepository municipalitiesRepository) {
         this.municipalitiesService = municipalitiesService;
+        this.municipalitiesRepository = municipalitiesRepository;
     }
 
     @GetMapping
@@ -28,8 +29,15 @@ public class MunicipalitiesController {
     }
 
     @GetMapping("/search")
+    @ResponseStatus(HttpStatus.OK)
     public List<Municipality> searchByMunicipalityName(@RequestParam String municipalityName) {
         return this.municipalitiesService.findByMunicipalityName(municipalityName);
     }
+
+//    @GetMapping("/search")
+//    @ResponseStatus(HttpStatus.OK)
+//    public List<Municipality> findAllMunicipalities() {
+//        return this.municipalitiesRepository.findAll();
+//    }
 
 }

@@ -8,8 +8,6 @@ import jakarta.validation.constraints.Size;
 public record RegistrationRequestsDTO(
         @NotBlank(message = "This field cannot be blank")
         String name,
-        @NotBlank(message = "his field cannot be blank")
-        String surname,
         @NotBlank(message = "Email is mandatory")
         @Email(message = "Email is not correct")
         String email,

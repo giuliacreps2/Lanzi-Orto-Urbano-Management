@@ -104,6 +104,12 @@
             <version>0.13.0</version>
             <scope>runtime</scope>
         </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/com.resend/resend-java -->
+        <dependency>
+            <groupId>com.resend</groupId>
+            <artifactId>resend-java</artifactId>
+            <version>v4.14.1</version>
+        </dependency>
     </dependencies>
 
     <build>
