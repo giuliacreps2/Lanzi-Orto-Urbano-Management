@@ -40,7 +40,7 @@ public class ProductCategoryAttributesController {
 
     //GET
     @GetMapping("/{productCategoryAttributeId}")
-    public ProductCategoryAttribute findById(UUID productCategoryAttributeId) {
+    public ProductCategoryAttribute findById(@PathVariable UUID productCategoryAttributeId) {
         return this.productCategoryAttributesService.findById(productCategoryAttributeId);
     }
 
@@ -49,6 +49,11 @@ public class ProductCategoryAttributesController {
         if (size > 100 || size < 0) size = 10;
         if (page < 0) page = 0;
         return this.productCategoryAttributesService.findAll(page, size, sortBy);
+    }
+
+    @GetMapping("/category/{productCategoryId}")
+    public List<ProductCategoryAttribute> findByCategoryId(@PathVariable UUID productCategoryId) {
+        return this.productCategoryAttributesService.findByCategoryId(productCategoryId);
     }
 
     //UPDATE
@@ -65,7 +70,7 @@ public class ProductCategoryAttributesController {
     @DeleteMapping("/{productCategoryAttributeId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteProdCatAttribute(UUID productCategoryAttributeId) {
+    public void deleteProdCatAttribute(@PathVariable UUID productCategoryAttributeId) {
         this.productCategoryAttributesService.deleteProductById(productCategoryAttributeId);
     }
 

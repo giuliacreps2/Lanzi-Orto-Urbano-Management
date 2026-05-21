@@ -2,11 +2,13 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.controllers.products;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Product;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductCatalogDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductsService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -48,6 +50,12 @@ public class ProductsController {
         if (size > 100 || size < 0) size = 10;
         if (page < 0) page = 0;
         return this.productsService.findAll(page, size, sortBy);
+    }
+
+
+    @GetMapping("/catalog")
+    public List<ProductCatalogDTO> findCatalog(Authentication authentication) {
+        return this.productsService.getCatalog(authentication);
     }
 
     //UPDATE

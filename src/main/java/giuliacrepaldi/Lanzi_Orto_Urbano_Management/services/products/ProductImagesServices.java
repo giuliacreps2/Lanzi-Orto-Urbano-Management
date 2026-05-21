@@ -93,22 +93,22 @@ public class ProductImagesServices {
 
 
     //DELETE
-    public void delete(UUID imageProdId) {
-        try {
-            String publicId;
-
-
-            Map result = cloudinaryUploader.uploader().destroy(publicId, ObjectUtils.emptyMap());
-            String url = (String) result.get("secure_url");
-            log.info(url);
-
-            log.info("deleted product image successfully");
-            productImagesRepository.deleteById(imageProdId);
-
-        } catch (IOException e) {
-            throw new RuntimeException("Cloudinary delete failed", e);
-        }
-    }
+//    public void delete(UUID imageProdId) {
+//        try {
+//            String publicId;
+//
+//
+//            Map result = cloudinaryUploader.uploader().destroy(publicId, ObjectUtils.emptyMap());
+//            String url = (String) result.get("secure_url");
+//            log.info(url);
+//
+//            log.info("deleted product image successfully");
+//            productImagesRepository.deleteById(imageProdId);
+//
+//        } catch (IOException e) {
+//            throw new RuntimeException("Cloudinary delete failed", e);
+//        }
+//    }
 
 
 }

@@ -10,5 +10,7 @@ import java.util.UUID;
 
 @Repository
 public interface ProductsRepository extends JpaRepository<Product, UUID> {
-    Optional<Product> findByIdAndAvailabiltyStatus(UUID productId, AvailabilityStatus availabilityStatus);
+    Optional<Product> findByProductIdAndAvailabilityStatus(UUID productId, AvailabilityStatus availabilityStatus);
+
+//    ClientCategory findClientCategoryByUser(User user);
 }

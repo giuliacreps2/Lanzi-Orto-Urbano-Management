@@ -1,16 +1,25 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.PriceList;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Product;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductCategoryAttribute;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductCatalogDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductCategoryAttributesRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductVariantsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductsRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.UsersService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,11 +33,15 @@ public class ProductsService {
     private final ProductsRepository productsRepository;
     private final ProductCategoryAttributesRepository productCategoryAttributesRepository;
     private final ProductCategoriesService productCategoriesService;
+    private final ProductVariantsRepository productVariantsRepository;
+    private final UsersService usersService;
 
-    public ProductsService(ProductsRepository productsRepository, ProductCategoryAttributesRepository productCategoryAttributesRepository, ProductCategoriesService productCategoriesService) {
+    public ProductsService(ProductsRepository productsRepository, ProductCategoryAttributesRepository productCategoryAttributesRepository, ProductCategoriesService productCategoriesService, ProductVariantsRepository productVariantsRepository, UsersService usersService) {
         this.productsRepository = productsRepository;
         this.productCategoryAttributesRepository = productCategoryAttributesRepository;
         this.productCategoriesService = productCategoriesService;
+        this.productVariantsRepository = productVariantsRepository;
+        this.usersService = usersService;
     }
 
     //CREATE
@@ -62,6 +75,77 @@ public class ProductsService {
         return this.productsRepository.findAll(pageable);
     }
 
+//    public ClientCategory findClientCategoryByUserId(UUID userId) {
+//        return this.productsRepository.findClientCategoryByUserId(userId);
+//    }
+//
+
+    //RICHIESTA PER CAPIRE SE CLIENTE B2B/B2C
+    public ClientCategory resolveClientCategory(User currentUser) {
+        if (
+                currentUser != null
+                        && currentUser.getB2bProfile() != null
+                        && currentUser.getB2bProfile().getStatusB2b() == StatusB2b.APPROVED
+        ) {
+            return ClientCategory.B2B;
+        }
+        return ClientCategory.B2C;
+    }
+
+    //SWITCH CATALOGO PRODOTTI PER B2C/B2B
+    public List<ProductCatalogDTO> getCatalogForUser(User currentUser) {
+
+        ClientCategory clientCategory = resolveClientCategory(currentUser);
+
+        List<ProductVariant> variants = productVariantsRepository.findByActiveVariantTrue();
+
+        return variants.stream()
+                .map(variant -> {
+                    PriceList priceList = variant.getPriceList()
+                            .stream()
+                            .filter(price -> price.getClientCategory() == clientCategory)
+                            .findFirst()
+                            .orElseThrow(() -> new NotFoundException("Price not found for variant " + variant.getVariantId()));
+
+                    Product product = variant.getProduct();
+
+                    String priceLabel = clientCategory == ClientCategory.B2B
+                            ? "+IVA"
+                            : "IVA inclusa";
+
+                    return new ProductCatalogDTO(
+                            product.getProductId(),
+                            variant.getVariantId(),
+                            product.getProductName(),
+                            product.getProductSlug(),
+                            product.getShortProductDescription(),
+                            variant.getSkuVariant(),
+                            variant.getNetWeight(),
+                            variant.getUnit().toString(),
+                            priceList.getPrice(),
+                            clientCategory,
+                            priceLabel,
+                            priceList.getMinOrderQuantity(),
+                            product.isProductIsAvailable(),
+                            variant.isActiveVariant()
+                    );
+                })
+                .toList();
+    }
+
+    //CATALOGO PRODOTTI UTENTI NON LOGGATI
+    public List<ProductCatalogDTO> getCatalog(Authentication authentication) {
+        User currentUser = null;
+
+        if (authentication != null && authentication.isAuthenticated()) {
+            String email = authentication.getName();
+            currentUser = this.usersService.findByEmail(email);
+        }
+
+        return this.getCatalogForUser(currentUser);
+    }
+
+
     //UPDATE
 
     public Product findByIdAndUpdateProduct(UUID productId, ProductDTO body) {
@@ -88,7 +172,7 @@ public class ProductsService {
     //VALIDATION METADATA
     private void validateProductAttribute(Product product) {
         List<ProductCategoryAttribute> schema =
-                productCategoryAttributesRepository.findByProductCategory(product.getProductCategory());
+                productCategoryAttributesRepository.findByProductCategory_ProductCategoryId(product.getProductCategory().getProductCategoryId());
 
         Map<String, Object> values = product.getTechnicalProdDetails();
 

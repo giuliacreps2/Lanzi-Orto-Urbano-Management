@@ -45,4 +45,5 @@ public class ProductCategoryAttribute {
     @ManyToOne
     @JoinColumn(name = "product_category_id")
     private ProductCategory productCategory;
+    
 }

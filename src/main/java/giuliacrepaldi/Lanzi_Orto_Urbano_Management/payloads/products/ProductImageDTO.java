@@ -6,4 +6,5 @@ public record ProductImageDTO(
         Integer sortOrder,
         boolean isPrimary
 ) {
+
 }

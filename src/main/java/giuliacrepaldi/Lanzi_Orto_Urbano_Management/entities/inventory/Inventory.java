@@ -36,7 +36,7 @@ public class Inventory {
     @Column(nullable = false)
     private Integer minThreshold;
 
-    @Column(nullable = false)
+    @Column
     private LocalDateTime deletedAt;
 
 

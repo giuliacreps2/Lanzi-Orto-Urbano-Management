@@ -1,5 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductCategoryAttribute;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductCategoryAttributeDTO;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -28,6 +30,8 @@ public class ProductCategoryAttributesService {
     //CREATE
     public ProductCategoryAttribute saveNewProdCategoryAttribute(ProductCategoryAttributeDTO body) {
 
+        ProductCategory category = productCategoriesService.findById(body.productCategoryId());
+
         ProductCategoryAttribute newProdCategoryAttribute = ProductCategoryAttribute.builder()
                 .prodCatAttributeKey(body.prodCatAttributeKey())
                 .prodCatAttributeLabel(body.prodCatAttributeLabel())
@@ -36,6 +40,7 @@ public class ProductCategoryAttributesService {
                 .defaultValue(body.defaultValue())
                 .minValue(body.minValue())
                 .maxValue(body.maxValue())
+                .productCategory(category)
                 .build();
 
         ProductCategoryAttribute savedProdCategoryAttribute = productCategoryAttributesRepository.save(newProdCategoryAttribute);
@@ -56,7 +61,13 @@ public class ProductCategoryAttributesService {
         return this.productCategoryAttributesRepository.findAll(pageable);
     }
 
-    //UPDATE
+    public List<ProductCategoryAttribute> findByCategoryId(UUID productCategoryId) {
+        return this.productCategoryAttributesRepository.findByProductCategory_ProductCategoryId(productCategoryId);
+
+    }
+
+
+//UPDATE
 
     public ProductCategoryAttribute findByIdAndUpdateProdCategoryAttribute(UUID prodCatAttributeId, ProductCategoryAttributeDTO body) {
         if (!productCategoryAttributesRepository.existsById(prodCatAttributeId))
@@ -83,9 +94,9 @@ public class ProductCategoryAttributesService {
     //DELETE
     public void deleteProductById(UUID prodCatAttributeId) {
         if (!productCategoryAttributesRepository.existsById(prodCatAttributeId))
-            throw new NotFoundException("Product not found");
+            throw new NotFoundException("Product Category Attribute not found");
         log.info("Product Category Attribute deleted successfully: {}", prodCatAttributeId);
         productCategoryAttributesRepository.deleteById(prodCatAttributeId);
     }
-}
 
+}

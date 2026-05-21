@@ -4,8 +4,10 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVari
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
 public interface ProductVariantsRepository extends JpaRepository<ProductVariant, UUID> {
+    List<ProductVariant> findByActiveVariantTrue();
 }

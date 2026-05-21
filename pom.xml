@@ -121,6 +121,7 @@
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
             <version>3.5.3</version>
+        </dependency>
         <!-- Source: https://mvnrepository.com/artifact/com.resend/resend-java -->
         <dependency>
             <groupId>com.resend</groupId>

@@ -1,18 +1,13 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.controllers.products;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductImage;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductImageDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductImagesServices;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -26,17 +21,17 @@ public class ProductImagesController {
     }
 
     //POST
-    @PostMapping("/new-img")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ProductImage createProductImage(@RequestBody @Validated ProductImageDTO body, MultipartFile file, BindingResult validation) {
-        if (validation.hasErrors()) {
-            List<String> errors = validation.getFieldErrors()
-                    .stream().map(e -> e.getDefaultMessage()).toList();
-            throw new ValidationException(errors);
-        }
-        return this.productImagesServices.saveImage(file, body.productId(), body.altText(), body.sortOrder(), body.isPrimary());
-    }
+//    @PostMapping("/new-img")
+//    @PreAuthorize("hasAuthority('ADMIN')")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public ProductImage createProductImage(@RequestBody @Validated ProductImageDTO body, MultipartFile file, BindingResult validation) {
+//        if (validation.hasErrors()) {
+//            List<String> errors = validation.getFieldErrors()
+//                    .stream().map(e -> e.getDefaultMessage()).toList();
+//            throw new ValidationException(errors);
+//        }
+//        return this.productImagesServices.saveImage(file, body.productId(), body.altText(), body.sortOrder(), body.isPrimary());
+//    }
 
 
     //GET
@@ -58,12 +53,12 @@ public class ProductImagesController {
 
 
     //DELETE
-    @DeleteMapping("/{prodImageId}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID prodImageId) {
-        this.productImagesServices.delete(prodImageId);
-    }
+//    @DeleteMapping("/{prodImageId}")
+//    @PreAuthorize("hasAuthority('ADMIN')")
+//    @ResponseStatus(HttpStatus.NO_CONTENT)
+//    public void delete(@PathVariable UUID prodImageId) {
+//        this.productImagesServices.delete(prodImageId);
+//    }
 
 
 }

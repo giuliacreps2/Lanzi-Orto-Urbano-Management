@@ -1,4 +1,4 @@
-package giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads;
+package giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.AccountType;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;

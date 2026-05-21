@@ -1,17 +1,20 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.PriceList;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductVariantDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductVariantsRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -22,7 +25,7 @@ public class ProductVariantsService {
     private final PriceListsService priceListsService;
     private final PackagingTypesService packagingTypesService;
 
-    public ProductVariantsService(ProductVariantsRepository productVariantsRepository, PriceListsService priceListsService, PackagingTypesService packagingTypesService) {
+    public ProductVariantsService(@Lazy ProductVariantsRepository productVariantsRepository, @Lazy PriceListsService priceListsService, @Lazy PackagingTypesService packagingTypesService) {
         this.productVariantsRepository = productVariantsRepository;
         this.priceListsService = priceListsService;
         this.packagingTypesService = packagingTypesService;
@@ -67,7 +70,7 @@ public class ProductVariantsService {
         found.setNetWeight(body.netWeight());
         found.setUnit(body.unit());
         found.setPackagingType(packagingTypesService.findById(body.packTypeId()));
-        found.setPriceList(priceListsService.findById(body.priceListId()));
+        found.setPriceList((List<PriceList>) priceListsService.findById(body.priceListId()));
 
         ProductVariant updated = this.productVariantsRepository.save(found);
         log.info("Product Variant updated successfully, {}", updated);

@@ -88,7 +88,7 @@ public class InventoryService {
 
     @Transactional
     public void removeProduct(UUID productId, AvailabilityStatus availabilityStatus) {
-        Product found = this.productsRepository.findByIdAndAvailabiltyStatus(productId, AvailabilityStatus.PENDING_DELETE)
+        Product found = this.productsRepository.findByProductIdAndAvailabilityStatus(productId, AvailabilityStatus.PENDING_DELETE)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
 
         found.setDeletedAt(LocalDateTime.now());

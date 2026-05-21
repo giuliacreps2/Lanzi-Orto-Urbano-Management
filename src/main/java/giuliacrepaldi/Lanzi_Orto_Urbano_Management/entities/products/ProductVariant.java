@@ -4,6 +4,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.Unit;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -39,8 +40,8 @@ public class ProductVariant {
     @OneToOne
     private PackagingType packagingType;
 
-    @OneToOne(mappedBy = "productVariant")
-    private PriceList priceList;
+    @OneToMany(mappedBy = "productVariant")
+    private List<PriceList> priceList;
 
 
 }

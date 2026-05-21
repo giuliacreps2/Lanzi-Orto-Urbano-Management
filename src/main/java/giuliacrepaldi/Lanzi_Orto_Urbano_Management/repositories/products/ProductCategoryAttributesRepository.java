@@ -1,6 +1,5 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductCategoryAttribute;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,7 +13,7 @@ public interface ProductCategoryAttributesRepository extends JpaRepository<Produ
 
     Optional<ProductCategoryAttribute> findById(UUID prodCatAttributeId);
 
-    List<ProductCategoryAttribute> findByProductId(UUID productId);
+//    List<ProductCategoryAttribute> findByCategoryId(UUID productCategoryId);
 
-    List<ProductCategoryAttribute> findByProductCategory(ProductCategory productCategory);
+    List<ProductCategoryAttribute> findByProductCategory_ProductCategoryId(UUID productCategoryId);
 }

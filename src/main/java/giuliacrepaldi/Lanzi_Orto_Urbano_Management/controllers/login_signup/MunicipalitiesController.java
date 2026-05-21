@@ -1,6 +1,7 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.controllers.login_signup;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.Municipality;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.login_signup.MunicipalitiesRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.MunicipalitiesService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
