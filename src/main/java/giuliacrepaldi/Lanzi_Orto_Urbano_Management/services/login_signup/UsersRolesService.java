@@ -48,6 +48,10 @@ public class UsersRolesService {
         return this.usersRolesRepository.findAll(pageable);
     }
 
+    public List<UserRole> findRoleByUser(User user) {
+        return this.usersRolesRepository.findByUser(user);
+    }
+
     //DELETE
     public void deleteByUserId(UUID userId) {
         UserRole found = this.usersRolesRepository.findById(userId).orElseThrow(() -> new NotFoundException("User role not found"));

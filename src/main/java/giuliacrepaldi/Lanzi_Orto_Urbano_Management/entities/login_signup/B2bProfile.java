@@ -64,6 +64,10 @@ public class B2bProfile {
     @JoinColumn(name = "legal_address_id")
     private Address legalAddress;
 
+    @ManyToOne
+    @JoinColumn(name = "municipality_id")
+    private Municipality municipality;
+
 
     public B2bProfile(String vatNumber, String fiscalCode, String contactName, String contactSurname, String contactPhone, String contactEmail, String companyName, Long loyaltyPoints, TypeActivity typeActivity, StatusB2b statusB2b, User user) {
         this.vatNumber = vatNumber;

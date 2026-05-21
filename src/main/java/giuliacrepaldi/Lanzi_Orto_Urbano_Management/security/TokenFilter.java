@@ -9,6 +9,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class TokenFilter extends OncePerRequestFilter {
 
@@ -38,8 +40,14 @@ public class TokenFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer "))
-            throw new UnauthorizedException("Invalid Token. Please provide a valid Token");
+
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+//            throw new UnauthorizedException("Invalid Token. Please provide a valid Token");
+
 
         String accessToken = authHeader.replace("Bearer ", "");
 
@@ -53,11 +61,19 @@ public class TokenFilter extends OncePerRequestFilter {
         Authentication authenticationToken = new UsernamePasswordAuthenticationToken(user, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
+
+        log.info("TOKEN FILTER ACTIVE ON:" + request.getServletPath());
         filterChain.doFilter(request, response);
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        return new AntPathMatcher().match("/auth/**", request.getServletPath());
+        String servletPath = request.getServletPath();
+        log.info("SHOULD NOT FILTER - servletPath: " + servletPath);
+
+        AntPathMatcher antPathMatcher = new AntPathMatcher();
+
+        return antPathMatcher.match("/auth/**", request.getServletPath())
+                || antPathMatcher.match("/register/**", request.getServletPath());
     }
 }
