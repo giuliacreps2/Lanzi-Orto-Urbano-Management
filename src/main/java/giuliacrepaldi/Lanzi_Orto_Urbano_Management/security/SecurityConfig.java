@@ -42,8 +42,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/municipalities/**").permitAll()
                 .requestMatchers("/api/import/**").hasAuthority("ADMIN")
                 .requestMatchers("/roles/**").hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/auth/b2b/*/approve").hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/auth/b2b/*/reject").hasAuthority("ADMIN")
+                .requestMatchers("/auth/b2b/*/approve", "/auth/b2b/*/reject").permitAll()
                 .requestMatchers("/register/**").permitAll()
                 .anyRequest().authenticated()
         );

@@ -301,10 +301,11 @@ public class AuthService {
         metadata.put("municipalityId", body.municipalityId() != null ? body.municipalityId() : null);
         metadata.put("privacyAccepted", body.privacyAccepted());
 
+        String token = UUID.randomUUID().toString();
 
         RegistrationRequest newR = RegistrationRequest.builder()
                 .email(body.contactEmail())
-                .verificationToken(UUID.randomUUID().toString())
+                .verificationToken(token)
                 .tokenExpiresAt(LocalDateTime.now().plusDays(1))
                 .isUsed(false)
                 .createdAt(LocalDateTime.now())
@@ -313,18 +314,23 @@ public class AuthService {
                 .build();
 
         RegistrationRequest savedR = this.registrationRequestsRepository.save(newR);
+
         this.emailSender.sendB2bPendingEmail(body.contactEmail(), body.contactName());
 
+        this.emailSender.notifyAdminForApprovalFromRegistration(body, token);
+
+
         log.info("New B2B registration request for: {}", body.contactEmail());
-        return "Your registration has taken place. Check your email address.";
+        return "Your registration request has been received. We will verify your data shortly.";
     }
 
     //VERIFICA E CREAZIONE UTENTE B2B
     @Transactional
     public NewUserRespDTO verifyAndCreateB2bProfile(String token) {
+        log.info("TOKEN RICEVUTO: '{}'", token);
 
         RegistrationRequest found = this.registrationRequestsRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new NotFoundException("Token already exists"));
+                .orElseThrow(() -> new NotFoundException("Registration request token not found"));
 
         if (found.isUsed())
             throw new BadRequestException("Token is already used");
@@ -337,7 +343,7 @@ public class AuthService {
         User newUser = new User();
         newUser.setEmail(found.getEmail());
         newUser.setPassword((String) metadata.get("password"));
-        newUser.setActive(false);
+        newUser.setActive(true);
         newUser.setEmailVerified(true);
         newUser.setPrivacyAccepted((Boolean) metadata.get("privacyAccepted"));
         newUser.setPrivacyAcceptedAt(LocalDateTime.now());
@@ -358,21 +364,19 @@ public class AuthService {
             newB2bProfile.setCompanyName((String) metadata.get("companyName"));
             newB2bProfile.setTypeActivity(TypeActivity.valueOf((String) metadata.get("typeActivity")));
             newB2bProfile.setLoyaltyPoints(20L);
-            newB2bProfile.setStatusB2b(StatusB2b.PENDING);
+            newB2bProfile.setStatusB2b(StatusB2b.APPROVED);
             newB2bProfile.setUser(savedNewUser);
 
             b2bProfilesRepository.save(newB2bProfile);
 
-            this.emailSender.sendB2bPendingEmail(found.getEmail(), newB2bProfile.getContactName());
-            this.emailSender.notifyAdminForApproval(newB2bProfile);
+            B2bProfile savedB2bProfile = b2bProfilesRepository.save(newB2bProfile);
+//            this.emailSender.notifyAdminForApproval(savedNewUser.getUserId(), savedB2bProfile);
+            this.emailSender.sendApprovalEmail(newUser.getEmail(), newB2bProfile.getContactName());
         }
+
 
         Role newRole = this.rolesRepository.findByRoleName("USER")
                 .orElseThrow(() -> new NotFoundException("Role not found"));
-
-
-//        this.emailSender.sendRegistrationEmail(savedR);
-
 
         //Devo inviare una mail all'amministratore per la verifica del p.iva o del cf
         //Devo cambiare mettere lo stato pending, finchè l'amministratore non dà conferma
@@ -386,8 +390,6 @@ public class AuthService {
         found.setUsed(true);
         found.setUsedAt(LocalDateTime.now());
         this.registrationRequestsRepository.save(found);
-
-//              this.emailSender.notifyAdminForApproval(savedNewUser);
 
         return new NewUserRespDTO(savedNewUser.getUserId());
     }

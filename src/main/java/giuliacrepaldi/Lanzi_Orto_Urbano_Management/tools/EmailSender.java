@@ -6,9 +6,12 @@ import com.resend.services.emails.model.CreateEmailOptions;
 import com.resend.services.emails.model.CreateEmailResponse;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.B2bProfile;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.RegistrationRequest;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.RegisterB2bProfileDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -72,26 +75,30 @@ public class EmailSender {
     }
 
     //MAIL PER VERIFICA B2B ADMIN
-    public void notifyAdminForApproval(B2bProfile b2bProfile) {
+    public void notifyAdminForApproval(UUID userId, B2bProfile b2bProfile) {
         try {
             Resend resend = new Resend(apiKey);
+
+            String approvalLink = "http://localhost:3001/auth/b2b/" + userId + "/approve";
 
             CreateEmailOptions params = CreateEmailOptions.builder()
                     .from("info@lanziortourbano.it")
                     .to("info@lanziortourbano.it")
                     .subject("Nuova richiesta B2B da approvare")
                     .html("""
-                             <h2>Nuova richiesta B2B</h2>
-                                                <table>
-                                                    <tr><td><b>Azienda:</b></td><td>%s</td></tr>
-                                                    <tr><td><b>Contatto:</b></td><td>%s %s</td></tr>
-                                                    <tr><td><b>Email:</b></td><td>%s</td></tr>
-                                                    <tr><td><b>P.IVA:</b></td><td>%s</td></tr>
-                                                    <tr><td><b>Cod. Fiscale:</b></td><td>%s</td></tr>
-                                                    <tr><td><b>Tipo attività:</b></td><td>%s</td></tr>
-                                                </table>
-                                                <br>
-                                                <p>Vai al pannello admin per approvare o rifiutare.</p>
+                            <h2>Nuova richiesta B2B</h2>
+                                    <table>
+                                                                                                                                   <tr><td><b>Azienda:</b></td><td>%s</td></tr>
+                                                                                                                                    <tr><td><b>Contatto:</b></td><td>%s %s</td></tr>
+                                                                                                                                    <tr><td><b>Email:</b></td><td>%s</td></tr>
+                                                                                                                                    <tr><td><b>P.IVA:</b></td><td>%s</td></tr>
+                                                                                                                                    <tr><td><b>Cod. Fiscale:</b></td><td>%s</td></tr>
+                                                                                                                                    <tr><td><b>Tipo attività:</b></td><td>%s</td></tr>
+                                                                                                                                </table>
+                                                                                                                                <br>
+                                                                                                                                <a href="%s" style="background-color:#15803d;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;font-weight:bold;">
+                                                                                                                                    APPROVA ACCOUNT B2B
+                                                                                                                                </a>
                             """.formatted(
                             b2bProfile.getCompanyName(),
                             b2bProfile.getContactName(),
@@ -99,7 +106,8 @@ public class EmailSender {
                             b2bProfile.getContactEmail(),
                             b2bProfile.getVatNumber(),
                             b2bProfile.getFiscalCode(),
-                            b2bProfile.getTypeActivity()
+                            b2bProfile.getTypeActivity(),
+                            approvalLink
                     ))
                     .build();
 
@@ -155,6 +163,50 @@ public class EmailSender {
 
         } catch (Exception e) {
             log.info("Rejection email failed for {}: {}", toEmail, e.getMessage());
+        }
+    }
+
+    public void notifyAdminForApprovalFromRegistration(RegisterB2bProfileDTO body, String token) {
+        try {
+            Resend resend = new Resend(apiKey);
+
+            String approvalLink = "http://localhost:3000/verify-b2b?token=" + token;
+
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("info@lanziortourbano.it")
+                    .to("info@lanziortourbano.it")
+                    .subject("Nuova richiesta B2B da approvare")
+                    .html("""
+                                                         <h2>Nuova richiesta B2B in attesa di verifica</h2>
+                                                                            <table>
+                                                                                <tr><td><b>Azienda:</b></td><td>%s</td></tr>
+                                                                                <tr><td><b>Contatto:</b></td><td>%s %s</td></tr>
+                                                                                <tr><td><b>Email:</b></td><td>%s</td></tr>
+                                                                                <tr><td><b>P.IVA:</b></td><td>%s</td></tr>
+                                                                                <tr><td><b>Cod. Fiscale:</b></td><td>%s</td></tr>
+                                                                                <tr><td><b>Tipo attività:</b></td><td>%s</td></tr>
+                                                                            </table>
+                                                                            <br>
+                                                                           <a href="http://localhost:3000/verify-b2b?token=%s"
+                                                                               style="background-color: #15803d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                                                                               APPROVA ACCOUNT B2B
+                                                                            </a>
+                            """.formatted(
+                            body.companyName(),
+                            body.contactName(),
+                            body.contactSurname(),
+                            body.contactEmail(),
+                            body.vatNumber(),
+                            body.fiscalCode(),
+                            body.typeActivity(),
+                            token
+                    ))
+                    .build();
+
+            resend.emails().send(params);
+            log.info("Admin notified for B2B approval: {}", body.contactEmail());
+        } catch (ResendException e) {
+            log.error("Admin notification failed: {}", e.getMessage());
         }
     }
 
