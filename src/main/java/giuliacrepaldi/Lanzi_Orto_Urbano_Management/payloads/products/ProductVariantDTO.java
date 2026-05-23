@@ -7,7 +7,7 @@ import java.util.UUID;
 public record ProductVariantDTO(
         String skuVariant,
         boolean activeVariant,
-        double netWeight,
+        Double netWeight,
         Unit unit,
         UUID productId,
         UUID packTypeId,

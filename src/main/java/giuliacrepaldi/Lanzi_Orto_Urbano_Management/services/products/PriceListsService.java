@@ -1,9 +1,12 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.PriceList;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.PriceListDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.PriceListsRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductVariantsRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,18 +22,27 @@ public class PriceListsService {
 
     private final PriceListsRepository priceListsRepository;
     private final ProductVariantsService productVariantsService;
+    private final ProductVariantsRepository productVariantsRepository;
 
-    public PriceListsService(PriceListsRepository priceListsRepository, ProductVariantsService productVariantsService) {
+    public PriceListsService(PriceListsRepository priceListsRepository, ProductVariantsService productVariantsService, ProductVariantsRepository productVariantsRepository) {
         this.priceListsRepository = priceListsRepository;
         this.productVariantsService = productVariantsService;
+        this.productVariantsRepository = productVariantsRepository;
     }
 
     //CREATE
     public PriceList saveNewPriceList(PriceListDTO body) {
 
+        ProductVariant variant = this.productVariantsRepository.findById(body.productVariantId())
+                .orElseThrow(() -> new NotFoundException("Product variant not found"));
+
+        ClientCategory category = body.clientCategory() != null ? body.clientCategory() : ClientCategory.B2C;
+
         PriceList newPriceList = PriceList.builder()
                 .price(body.price())
                 .minOrderQuantity(body.minOrderQuantity())
+                .clientCategory(category)
+                .productVariant(variant)
                 .build();
 
         PriceList savedPriceList = priceListsRepository.save(newPriceList);

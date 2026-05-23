@@ -58,6 +58,15 @@ public class ProductVariantsService {
         return this.productVariantsRepository.findAll(pageable);
     }
 
+    public void validateVariantData(ProductVariant variant) {
+        if (variant.getUnit().isMeasurable() && variant.getNetWeight() == null) {
+            throw new IllegalArgumentException("About Unit" + variant.getUnit() + "is required net weight");
+        }
+        if (!variant.getUnit().isMeasurable() && variant.getNetWeight() == null) {
+            log.info("About this product variant net weight is not required");
+        }
+    }
+
     //UPDATE
 
     public ProductVariant findByIdAndUpdateProductVariant(UUID variantId, ProductVariantDTO body) {

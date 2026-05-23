@@ -26,8 +26,8 @@ public class ProductVariant {
     private String skuVariant;
     @Column(nullable = false)
     private boolean activeVariant;
-    @Column(nullable = false)
-    private double netWeight;
+    @Column
+    private Double netWeight;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

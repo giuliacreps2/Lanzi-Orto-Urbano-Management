@@ -4,11 +4,9 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.AvailabilityStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -41,14 +39,11 @@ public class Product {
     @Column(nullable = false)
     private boolean productIsAvailable;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb", nullable = false)
-    private Map<String, Object> technicalProdDetails;
+    @Column(nullable = false, updatable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    @Column(nullable = false)
+    @Column
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Column

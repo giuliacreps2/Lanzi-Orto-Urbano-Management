@@ -3,7 +3,6 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.PriceList;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Product;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductCategoryAttribute;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
@@ -23,7 +22,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -47,6 +45,7 @@ public class ProductsService {
     //CREATE
     public Product saveNewProduct(ProductDTO body) {
 
+
         Product newProduct = Product.builder()
                 .productName(body.productName())
                 .productSlug(body.productSlug())
@@ -56,6 +55,13 @@ public class ProductsService {
                 .productIsAvailable(body.productIsAvailable())
                 .createdAt(body.createdAt())
                 .build();
+
+        log.info("PRODUCT NAME" + newProduct.getProductName());
+        log.info("PRODUCT SLUG" + newProduct.getProductSlug());
+        log.info("PRODUCT DESCRIPTION" + newProduct.getProductDescription());
+        log.info("PRODUCT AVAILABILITY STATUS" + newProduct.getAvailabilityStatus());
+        log.info("PRODUCT IS AVAILABLE" + newProduct.getAvailabilityStatus());
+        log.info("PRODUCT CREATED AT" + newProduct.getCreatedAt());
 
         Product savedProduct = productsRepository.save(newProduct);
         log.info("Product saved successfully, {}", savedProduct);
@@ -159,7 +165,7 @@ public class ProductsService {
         found.setShortProductDescription(body.shortProductDescription());
         found.setAvailabilityStatus(body.availabilityStatus());
         found.setProductIsAvailable(body.productIsAvailable());
-        found.setTechnicalProdDetails(body.technicalProdDetails());
+//        found.setTechnicalProdDetails(body.technicalProdDetails());
         found.setCreatedAt(body.createdAt());
         found.setProductCategory(productCategoriesService.findById(body.productCategoryId()));
 
@@ -169,19 +175,19 @@ public class ProductsService {
     }
 
 
-    //VALIDATION METADATA
-    private void validateProductAttribute(Product product) {
-        List<ProductCategoryAttribute> schema =
-                productCategoryAttributesRepository.findByProductCategory_ProductCategoryId(product.getProductCategory().getProductCategoryId());
-
-        Map<String, Object> values = product.getTechnicalProdDetails();
-
-        for (ProductCategoryAttribute attr : schema) {
-            if (attr.isRequired() && !values.containsKey(attr.getProdCatAttributeKey())) {
-                throw new IllegalArgumentException("Product category attribute " + attr.getProdCatAttributeKey() + " is required");
-            }
-        }
-    }
+//    //VALIDATION METADATA
+//    private void validateProductAttribute(Product product) {
+//        List<ProductCategoryAttribute> schema =
+//                productCategoryAttributesRepository.findByProductCategory_ProductCategoryId(product.getProductCategory().getProductCategoryId());
+//
+//        Map<String, Object> values = product.getTechnicalProdDetails();
+//
+//        for (ProductCategoryAttribute attr : schema) {
+//            if (attr.isRequired() && !values.containsKey(attr.getProdCatAttributeKey())) {
+//                throw new IllegalArgumentException("Product category attribute " + attr.getProdCatAttributeKey() + " is required");
+//            }
+//        }
+//    }
 
     //DELETE
     public void deleteProductById(UUID productId) {
