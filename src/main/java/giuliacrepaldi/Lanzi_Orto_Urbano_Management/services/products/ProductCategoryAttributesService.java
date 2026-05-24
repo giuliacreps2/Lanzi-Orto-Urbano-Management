@@ -40,6 +40,7 @@ public class ProductCategoryAttributesService {
                 .defaultValue(body.defaultValue())
                 .minValue(body.minValue())
                 .maxValue(body.maxValue())
+                .unit(body.unit())
                 .productCategory(category)
                 .build();
 

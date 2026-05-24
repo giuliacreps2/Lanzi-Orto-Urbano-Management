@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/prod")
+@RequestMapping("/categories")
 public class ProductCategoriesController {
 
     private final ProductCategoriesService productCategoriesService;
@@ -25,7 +25,7 @@ public class ProductCategoriesController {
     }
 
     //POST
-    @PostMapping("/new-category")
+    @PostMapping("/new-cat")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductCategory saveProductCategory(@RequestBody @Validated ProductCategoryDTO body, BindingResult validation) {

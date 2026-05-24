@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/category-attribute")
+@RequestMapping("/attributes")
 public class ProductCategoryAttributesController {
 
     private final ProductCategoryAttributesService productCategoryAttributesService;
