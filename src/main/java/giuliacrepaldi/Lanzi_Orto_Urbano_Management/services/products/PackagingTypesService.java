@@ -18,11 +18,10 @@ import java.util.UUID;
 public class PackagingTypesService {
 
     private final PackagingTypesRepository packagingTypesRepository;
-    private final ProductVariantsService productVariantsService;
 
-    public PackagingTypesService(PackagingTypesRepository packagingTypesRepository, ProductVariantsService productVariantsService) {
+    public PackagingTypesService(PackagingTypesRepository packagingTypesRepository) {
         this.packagingTypesRepository = packagingTypesRepository;
-        this.productVariantsService = productVariantsService;
+
     }
 
     //CREATE
@@ -32,6 +31,7 @@ public class PackagingTypesService {
                 .namePackType(body.namePackType())
                 .dimensionsJsonb(body.dimensionsJsonb())
                 .unitOfMeasure(body.unitOfMeasure())
+                .packagingCategory(body.packagingCategory())
                 .build();
 
         PackagingType savedPackagingType = packagingTypesRepository.save(newPackType);
@@ -64,7 +64,6 @@ public class PackagingTypesService {
         found.setUnitOfMeasure(body.unitOfMeasure());
         found.setDimensionsJsonb(body.dimensionsJsonb());
         found.setPackagingCategory(body.packagingCategory());
-        found.setProductVariant(productVariantsService.findById(body.productVariantId()));
 
         PackagingType updatedPackType = this.packagingTypesRepository.save(found);
         log.info("PackagingType updated successfully");
@@ -77,7 +76,7 @@ public class PackagingTypesService {
         if (!packagingTypesRepository.existsById(packTypeId)) throw new NotFoundException("PackagingType not found");
 
         PackagingType found = this.findById(packTypeId);
-        log.info("PackagingType deleted successfully");
         packagingTypesRepository.delete(found);
+        log.info("PackagingType deleted successfully");
     }
 }

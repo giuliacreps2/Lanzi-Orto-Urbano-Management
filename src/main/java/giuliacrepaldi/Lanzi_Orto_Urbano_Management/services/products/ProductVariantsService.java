@@ -1,7 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.PriceList;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductVariantDTO;
@@ -14,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -24,11 +22,13 @@ public class ProductVariantsService {
     private final ProductVariantsRepository productVariantsRepository;
     private final PriceListsService priceListsService;
     private final PackagingTypesService packagingTypesService;
+    private final ProductsService productsService;
 
-    public ProductVariantsService(@Lazy ProductVariantsRepository productVariantsRepository, @Lazy PriceListsService priceListsService, @Lazy PackagingTypesService packagingTypesService) {
+    public ProductVariantsService(@Lazy ProductVariantsRepository productVariantsRepository, @Lazy PriceListsService priceListsService, @Lazy PackagingTypesService packagingTypesService, ProductsService productsService) {
         this.productVariantsRepository = productVariantsRepository;
         this.priceListsService = priceListsService;
         this.packagingTypesService = packagingTypesService;
+        this.productsService = productsService;
     }
 
     //CREATE
@@ -38,6 +38,9 @@ public class ProductVariantsService {
                 .skuVariant(body.skuVariant())
                 .activeVariant(body.activeVariant())
                 .netWeight(body.netWeight())
+                .unit(body.unit())
+                .product(productsService.findById(body.productId()))
+                .packagingType(packagingTypesService.findById(body.packTypeId()))
                 .build();
 
         ProductVariant savedProductVariant = productVariantsRepository.save(newProductVariant);
@@ -79,7 +82,6 @@ public class ProductVariantsService {
         found.setNetWeight(body.netWeight());
         found.setUnit(body.unit());
         found.setPackagingType(packagingTypesService.findById(body.packTypeId()));
-        found.setPriceList((List<PriceList>) priceListsService.findById(body.priceListId()));
 
         ProductVariant updated = this.productVariantsRepository.save(found);
         log.info("Product Variant updated successfully, {}", updated);

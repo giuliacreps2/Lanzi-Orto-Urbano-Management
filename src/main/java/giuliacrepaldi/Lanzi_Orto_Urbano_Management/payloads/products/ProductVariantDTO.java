@@ -10,7 +10,6 @@ public record ProductVariantDTO(
         Double netWeight,
         Unit unit,
         UUID productId,
-        UUID packTypeId,
-        UUID priceListId
+        UUID packTypeId
 ) {
 }
