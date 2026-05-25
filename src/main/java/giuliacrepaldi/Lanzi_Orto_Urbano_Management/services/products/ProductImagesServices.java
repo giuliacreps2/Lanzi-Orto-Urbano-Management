@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Product;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductImage;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductImageDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductImagesRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,6 +40,8 @@ public class ProductImagesServices {
             Map result = cloudinaryUploader.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
             String url = (String) result.get("secure_url");
             log.info(url);
+            String publicId = (String) result.get("public_id");
+            log.info("Uploaded to Cloudinary: URL={}, PublicId={}", url, publicId);
 
             Product product = productsService.findById(productId);
 
@@ -47,6 +50,7 @@ public class ProductImagesServices {
                     .altText(altText)
                     .sortOrder(sortOrder)
                     .isPrimary(isPrimary)
+                    .cloudinaryPublicId(publicId)
                     .product(product)
                     .build();
 
@@ -70,45 +74,57 @@ public class ProductImagesServices {
     }
 
     //UPDATE
-    public ProductImage setPrimary(UUID imageProdId, boolean isPrimary) {
+//    public ProductImage setPrimary(UUID imageProdId, boolean isPrimary) {
+//
+//        ProductImage found = this.productImagesRepository.findById(imageProdId).orElseThrow(() -> new NotFoundException("Image not found"));
+//        found.setPrimary(isPrimary);
+//        ProductImage savedProdImage = this.productImagesRepository.save(found);
+//
+//        log.info("Product Image with id: " + imageProdId + " has been updated primary Image successfully");
+//        return savedProdImage;
+//    }
+//
+//    public ProductImage updateAlteTextAndOrder(UUID imageProdId, String altText, Integer sortOrder) {
+//
+//        ProductImage found = this.productImagesRepository.findById(imageProdId).orElseThrow(() -> new NotFoundException("Image not found"));
+//        found.setAltText(altText);
+//        found.setSortOrder(sortOrder);
+//        ProductImage savedProdImage = this.productImagesRepository.save(found);
+//
+//        log.info("Product Image with id: " + imageProdId + " has been updated successfully");
+//        return savedProdImage;
+//    }
 
+
+    public ProductImage updateMetadata(UUID imageProdId, ProductImageDTO body) {
         ProductImage found = this.productImagesRepository.findById(imageProdId).orElseThrow(() -> new NotFoundException("Image not found"));
-        found.setPrimary(isPrimary);
-        ProductImage savedProdImage = this.productImagesRepository.save(found);
 
-        log.info("Product Image with id: " + imageProdId + " has been updated primary Image successfully");
-        return savedProdImage;
+        if (body.altText() != null) found.setAltText(body.altText());
+        if (body.sortOrder() != null) found.setSortOrder(body.sortOrder());
+        if (body.isPrimary()) found.setPrimary(body.isPrimary());
+
+        ProductImage saved = this.productImagesRepository.save(found);
+        log.info("ProductImage updated successfully");
+        return saved;
     }
-
-    public ProductImage updateAlteTextAndOrder(UUID imageProdId, String altText, Integer sortOrder) {
-
-        ProductImage found = this.productImagesRepository.findById(imageProdId).orElseThrow(() -> new NotFoundException("Image not found"));
-        found.setAltText(altText);
-        found.setSortOrder(sortOrder);
-        ProductImage savedProdImage = this.productImagesRepository.save(found);
-
-        log.info("Product Image with id: " + imageProdId + " has been updated successfully");
-        return savedProdImage;
-    }
-
 
     //DELETE
-//    public void delete(UUID imageProdId) {
-//        try {
-//            String publicId;
-//
-//
-//            Map result = cloudinaryUploader.uploader().destroy(publicId, ObjectUtils.emptyMap());
-//            String url = (String) result.get("secure_url");
-//            log.info(url);
-//
-//            log.info("deleted product image successfully");
-//            productImagesRepository.deleteById(imageProdId);
-//
-//        } catch (IOException e) {
-//            throw new RuntimeException("Cloudinary delete failed", e);
-//        }
-//    }
+    public void delete(UUID imageProdId) {
+        ProductImage found = this.productImagesRepository.findById(imageProdId).orElseThrow(() -> new NotFoundException("Image not found"));
+
+        try {
+            if (found.getCloudinaryPublicId() != null) {
+
+                Map result = cloudinaryUploader.uploader().destroy(found.getCloudinaryPublicId(), ObjectUtils.emptyMap());
+                String url = (String) result.get("secure_url");
+                log.info("Cloudinary destruction result for {}: {}", found.getCloudinaryPublicId(), url);
+            }
+            productImagesRepository.deleteById(imageProdId);
+            log.info("ProductImage deleted from DB successfully", imageProdId);
+        } catch (IOException e) {
+            throw new RuntimeException("Cloudinary delete failed", e);
+        }
+    }
 
 
 }
