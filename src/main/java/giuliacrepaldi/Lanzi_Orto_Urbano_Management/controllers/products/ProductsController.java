@@ -7,6 +7,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductsService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
@@ -14,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -51,11 +53,27 @@ public class ProductsController {
         if (page < 0) page = 0;
         return this.productsService.findAll(page, size, sortBy);
     }
+//
+//    @GetMapping
+//    public Page<Product> findByStatus(String status, int page, int size, String sortBy) {
+//        if (size > 100 || size < 0) size = 10;
+//        if (page < 0) page = 0;
+//        return this.productsService.findByStatus(status, page, size, sortBy);
+//    }
+
+    @PatchMapping("/{productId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<Product> patchProduct(@PathVariable UUID productId, @RequestBody Map<String, Object> updates) {
+        Product productUpdated = this.productsService.patchProduct(productId, updates);
+        return ResponseEntity.ok(productUpdated);
+    }
 
 
     @GetMapping("/catalog")
-    public List<ProductCatalogDTO> findCatalog(Authentication authentication) {
-        return this.productsService.getCatalog(authentication);
+    public ResponseEntity<List<ProductCatalogDTO>> getProductCatalog(Authentication authentication) {
+        List<ProductCatalogDTO> catalog = this.productsService.getCatalog(authentication);
+        return ResponseEntity.ok(catalog);
     }
 
     //UPDATE
@@ -66,8 +84,18 @@ public class ProductsController {
         return this.productsService.findByIdAndUpdateProduct(productId, body);
     }
 
-    //DELETE
+    //SOFT DELETE
     @DeleteMapping("/{productId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<Void> softDeleteProduct(@PathVariable UUID productId) {
+        this.productsService.softDeleteProduct(productId);
+        return ResponseEntity.noContent().build();
+    }
+
+
+    //DELETE
+    @DeleteMapping("/delete/{productId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteById(UUID productId) {

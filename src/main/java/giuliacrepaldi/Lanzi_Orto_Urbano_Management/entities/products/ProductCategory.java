@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -27,6 +28,8 @@ public class ProductCategory {
     private String nameProdCategory;
     @Column(nullable = false)
     private boolean requiresBatchTracking;
+
+    private LocalDateTime deletedAt;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)

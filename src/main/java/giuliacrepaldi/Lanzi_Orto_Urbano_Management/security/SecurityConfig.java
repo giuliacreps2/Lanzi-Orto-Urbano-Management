@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/municipalities/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/products/catalog").permitAll()
                 .requestMatchers("/api/import/**").hasAuthority("ADMIN")
                 .requestMatchers("/roles/**").hasAuthority("ADMIN")
                 .requestMatchers("/auth/b2b/*/approve", "/auth/b2b/*/reject").permitAll()

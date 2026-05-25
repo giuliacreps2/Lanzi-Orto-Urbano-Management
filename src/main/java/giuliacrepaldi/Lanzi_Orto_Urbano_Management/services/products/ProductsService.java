@@ -6,6 +6,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Product;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.ProductStatus;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductCatalogDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductDTO;
@@ -20,8 +21,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -54,6 +58,7 @@ public class ProductsService {
                 .availabilityStatus(body.availabilityStatus())
                 .productIsAvailable(body.productIsAvailable())
                 .createdAt(body.createdAt())
+                .productStatus(body.productStatus())
                 .build();
 
         log.info("PRODUCT NAME" + newProduct.getProductName());
@@ -88,10 +93,11 @@ public class ProductsService {
 
     //RICHIESTA PER CAPIRE SE CLIENTE B2B/B2C
     public ClientCategory resolveClientCategory(User currentUser) {
+        if (currentUser == null) {
+            return ClientCategory.B2C;
+        }
         if (
-                currentUser != null
-                        && currentUser.getB2bProfile() != null
-                        && currentUser.getB2bProfile().getStatusB2b() == StatusB2b.APPROVED
+                currentUser.getB2bProfile() != null && currentUser.getB2bProfile().getStatusB2b() == StatusB2b.APPROVED
         ) {
             return ClientCategory.B2B;
         }
@@ -105,19 +111,34 @@ public class ProductsService {
 
         List<ProductVariant> variants = productVariantsRepository.findByActiveVariantTrue();
 
+        log.info("DEBUG CATALOGO - Numero di varianti attive trovate nel DB: {}", variants.size());
+
         return variants.stream()
+                .filter(variant -> variant.getProduct() != null
+                        && variant.getProduct().getDeletedAt() == null
+                        && variant.getProduct().getProductStatus() == ProductStatus.ACTIVE)
+
                 .map(variant -> {
                     PriceList priceList = variant.getPriceList()
                             .stream()
                             .filter(price -> price.getClientCategory() == clientCategory)
                             .findFirst()
-                            .orElseThrow(() -> new NotFoundException("Price not found for variant " + variant.getVariantId()));
+                            .orElseGet(() -> variant.getPriceList()
+                                    .stream()
+                                    .filter(price -> price.getClientCategory() == ClientCategory.B2C)
+                                    .findFirst()
+                                    .orElseThrow(() -> new NotFoundException("Nessun listino prezzi (B2C/B2B) trovato per la variante: " + variant.getVariantId()))
+                            );
 
                     Product product = variant.getProduct();
 
                     String priceLabel = clientCategory == ClientCategory.B2B
                             ? "+IVA"
                             : "IVA inclusa";
+
+                    double safeNetWeight = variant.getNetWeight() != null ? variant.getNetWeight() : 0.0;
+
+                    String safeUnit = variant.getUnit() != null ? variant.getUnit().toString() : "";
 
                     return new ProductCatalogDTO(
                             product.getProductId(),
@@ -126,7 +147,7 @@ public class ProductsService {
                             product.getProductSlug(),
                             product.getShortProductDescription(),
                             variant.getSkuVariant(),
-                            variant.getNetWeight(),
+                            safeNetWeight,
                             variant.getUnit().toString(),
                             priceList.getPrice(),
                             clientCategory,
@@ -143,7 +164,10 @@ public class ProductsService {
     public List<ProductCatalogDTO> getCatalog(Authentication authentication) {
         User currentUser = null;
 
-        if (authentication != null && authentication.isAuthenticated()) {
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && !authentication.getPrincipal().equals("anonymousUser")
+        ) {
             String email = authentication.getName();
             currentUser = this.usersService.findByEmail(email);
         }
@@ -175,6 +199,34 @@ public class ProductsService {
     }
 
 
+    @Transactional
+    public Product patchProduct(UUID productId, Map<String, Object> updates) {
+
+        Product found = this.findById(productId);
+
+        updates.forEach((key, value) -> {
+            if (value != null) {
+                switch (key) {
+                    case "productName" -> found.setProductName((String) value);
+                    case "productSlug" -> found.setProductSlug((String) value);
+                    case "productDescription" -> found.setProductDescription((String) value);
+                    case "shortProductDescription" -> found.setShortProductDescription((String) value);
+                    case "productIsAvailable" -> found.setProductIsAvailable((boolean) value);
+                    case "productStatus" -> found.setProductStatus(ProductStatus.valueOf((String) value));
+                    case "productCategoryId" -> {
+                        UUID categoryId = UUID.fromString((String) value);
+                        found.setProductCategory(productCategoriesService.findById(categoryId));
+                    }
+                    default -> log.info("Field {} not mapped for PATCH on Product", key);
+                }
+            }
+        });
+        Product updated = this.productsRepository.save(found);
+        log.info("Product updated successfully, {}", updated);
+        return updated;
+    }
+
+
 //    //VALIDATION METADATA
 //    private void validateProductAttribute(Product product) {
 //        List<ProductCategoryAttribute> schema =
@@ -189,10 +241,26 @@ public class ProductsService {
 //        }
 //    }
 
+
+    //SOFT DELETE
+    @Transactional
+    public void softDeleteProduct(UUID productId) {
+        Product found = this.findById(productId);
+
+        found.setDeletedAt(LocalDateTime.now());
+
+        found.setProductIsAvailable(false);
+        found.setProductStatus(ProductStatus.ARCHIVED);
+
+        this.productsRepository.save(found);
+        log.info("Product soft deleted successfully and pun on Archived Status, {}", found);
+    }
+
     //DELETE
     public void deleteProductById(UUID productId) {
         if (!productsRepository.existsById(productId)) throw new NotFoundException("Product not found");
         log.info("Product deleted successfully, productId: {}", productId);
         productsRepository.deleteById(productId);
     }
+
 }

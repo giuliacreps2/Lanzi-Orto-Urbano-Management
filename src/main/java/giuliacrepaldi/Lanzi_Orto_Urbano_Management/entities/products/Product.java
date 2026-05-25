@@ -2,6 +2,7 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.AvailabilityStatus;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.ProductStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -48,6 +49,10 @@ public class Product {
 
     @Column
     private LocalDateTime deletedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "product_status", nullable = false)
+    private ProductStatus productStatus = ProductStatus.DRAFT;
 
 
     @ManyToOne

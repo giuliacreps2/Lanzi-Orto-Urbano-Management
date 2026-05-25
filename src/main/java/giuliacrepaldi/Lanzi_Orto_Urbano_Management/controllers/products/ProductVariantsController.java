@@ -58,6 +58,22 @@ public class ProductVariantsController {
         return this.productVariantsService.findByIdAndUpdateProductVariant(productVariantId, body);
     }
 
+//    @PatchMapping("/{productVariantId}")
+//    public ResponseEntity<ProductVariant> patchVariant(@PathVariable UUID productVariantId, @RequestBody Map<String, Object> updates) {
+//        ProductVariant productVariantUpdated = this.productVariantsService.patchProductVariant(productVariantId);
+//        return ResponseEntity.ok(productVariantUpdated);
+//    }
+
+
+    //SOFT DELETE
+//    @DeleteMapping("/{productVariantId}")
+//    @PreAuthorize("hasAuthority('ADMIN')")
+//    public ResponseEntity<Void> softDeleteProductVariant(@PathVariable UUID productVariantId) {
+//        this.productVariantsService.softDeleteProductVariant(productVariantId);
+//        return ResponseEntity.noContent().build();
+//    }
+
+
     //DELETE
     @DeleteMapping("/{productVariantId}")
     @PreAuthorize("hasAuthority('ADMIN')")

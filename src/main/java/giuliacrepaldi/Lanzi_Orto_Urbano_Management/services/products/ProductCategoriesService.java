@@ -10,7 +10,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -59,7 +62,7 @@ public class ProductCategoriesService {
         if (!productCategoriesRepository.existsById(productCategoryId))
             throw new NotFoundException("Product Category not found");
 
-        ProductCategory found = findById(productCategoryId);
+        ProductCategory found = this.findById(productCategoryId);
 
         found.setNameProdCategory(body.nameProdCategory());
         found.setMetadataProdCategory(body.metadataProdCategory());
@@ -70,6 +73,36 @@ public class ProductCategoriesService {
 
         return updatedProductCategory;
     }
+
+
+    @Transactional
+    public ProductCategory patchProdCategory(UUID productCatgoryId, Map<String, Object> updates) {
+
+        Optional<ProductCategory> found = this.productCategoriesRepository.findById(productCatgoryId);
+
+        updates.forEach((key, value) -> {
+            switch (key) {
+                case "nameProdCategory" -> found.get().setNameProdCategory((String) value);
+                case "requiresBatchTracking" -> found.get().setRequiresBatchTracking((boolean) value);
+                case "metadataProdCategory" -> {
+                    Map<String, Object> incomingMetadata = (Map<String, Object>) value;
+                    Map<String, Object> currentMetadata = found.get().getMetadataProdCategory();
+
+                    if (currentMetadata != null) {
+                        currentMetadata.putAll(incomingMetadata);
+                        found.get().setMetadataProdCategory(currentMetadata);
+                    } else {
+                        found.get().setMetadataProdCategory(incomingMetadata);
+                    }
+                }
+                default -> log.info("Field {} ignored during PATCH processing", key);
+            }
+        });
+        ProductCategory updatedProductCategory = this.productCategoriesRepository.save(found.get());
+        log.info("Product Category updated successfully: {}", updatedProductCategory);
+        return updatedProductCategory;
+    }
+
 
     //DELETE
     public void deleteProdCategory(UUID productCategoryId) {
