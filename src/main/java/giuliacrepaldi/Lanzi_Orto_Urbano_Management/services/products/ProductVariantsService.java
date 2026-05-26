@@ -39,6 +39,7 @@ public class ProductVariantsService {
                 .activeVariant(body.activeVariant())
                 .netWeight(body.netWeight())
                 .unit(body.unit())
+                .technicalDetails(body.technicalDetails())
                 .product(productsService.findById(body.productId()))
                 .packagingType(packagingTypesService.findById(body.packTypeId()))
                 .build();
@@ -81,6 +82,7 @@ public class ProductVariantsService {
         found.setActiveVariant(body.activeVariant());
         found.setNetWeight(body.netWeight());
         found.setUnit(body.unit());
+        found.setTechnicalDetails(body.technicalDetails());
         found.setPackagingType(packagingTypesService.findById(body.packTypeId()));
 
         ProductVariant updated = this.productVariantsRepository.save(found);

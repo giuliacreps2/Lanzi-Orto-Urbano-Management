@@ -39,7 +39,7 @@ public class PriceListsController {
 
     //GET
     @GetMapping("/{priceListId}")
-    public PriceList findById(UUID priceListId) {
+    public PriceList findById(@PathVariable UUID priceListId) {
         return this.priceListsService.findById(priceListId);
     }
 
@@ -64,7 +64,7 @@ public class PriceListsController {
     @DeleteMapping("/{priceListId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteById(UUID priceListId) {
+    public void deleteById(@PathVariable UUID priceListId) {
         this.priceListsService.deletePriceListById(priceListId);
     }
 }

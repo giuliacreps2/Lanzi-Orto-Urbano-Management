@@ -3,8 +3,11 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.Unit;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -32,6 +35,10 @@ public class ProductVariant {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Unit unit;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> technicalDetails;
 
     @ManyToOne
     @JoinColumn(name = "product_id")

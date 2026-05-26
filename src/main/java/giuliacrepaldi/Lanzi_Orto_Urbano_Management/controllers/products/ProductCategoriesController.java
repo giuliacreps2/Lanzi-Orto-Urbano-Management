@@ -42,7 +42,7 @@ public class ProductCategoriesController {
 
     //GET
     @GetMapping("/{productCategoryId}")
-    public ProductCategory findById(UUID productCategoryId) {
+    public ProductCategory findById(@PathVariable UUID productCategoryId) {
         return this.productCategoriesService.findById(productCategoryId);
     }
 
@@ -81,7 +81,7 @@ public class ProductCategoriesController {
     @DeleteMapping("/delete/{productCategoryId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteById(UUID productCategoryId) {
+    public void deleteById(@PathVariable UUID productCategoryId) {
         this.productCategoriesService.deleteProdCategory(productCategoryId);
     }
 

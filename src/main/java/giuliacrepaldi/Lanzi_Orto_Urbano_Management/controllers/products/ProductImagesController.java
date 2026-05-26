@@ -56,7 +56,7 @@ public class ProductImagesController {
 
     //PATCH
     @PatchMapping("/{prodImageId}")
-    @PreAuthorize("hasAuthority('ADMIN)")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ProductImage updateImageMetadata(@PathVariable UUID prodImageId,
                                             @RequestBody ProductImageDTO body) {
         return this.productImagesServices.updateMetadata(prodImageId, body);

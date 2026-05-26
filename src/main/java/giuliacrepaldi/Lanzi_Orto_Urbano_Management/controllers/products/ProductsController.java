@@ -98,7 +98,7 @@ public class ProductsController {
     @DeleteMapping("/delete/{productId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteById(UUID productId) {
+    public void deleteById(@PathVariable UUID productId) {
         this.productsService.deleteProductById(productId);
     }
 

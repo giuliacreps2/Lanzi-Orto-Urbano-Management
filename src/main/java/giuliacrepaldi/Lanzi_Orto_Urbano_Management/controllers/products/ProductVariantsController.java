@@ -39,7 +39,7 @@ public class ProductVariantsController {
 
     //GET
     @GetMapping("/{productVariantId}")
-    public ProductVariant findById(UUID productVariantId) {
+    public ProductVariant findById(@PathVariable UUID productVariantId) {
         return this.productVariantsService.findById(productVariantId);
     }
 
@@ -78,7 +78,7 @@ public class ProductVariantsController {
     @DeleteMapping("/{productVariantId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteProductVariant(UUID productVariantId) {
+    public void deleteProductVariant(@PathVariable UUID productVariantId) {
         this.productVariantsService.deleteProductVariantById(productVariantId);
     }
 

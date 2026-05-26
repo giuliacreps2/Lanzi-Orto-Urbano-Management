@@ -40,7 +40,7 @@ public class PackagingTypesController {
 
     //GET
     @GetMapping("/{packTypeId}")
-    public PackagingType findById(UUID packTypeId) {
+    public PackagingType findById(@PathVariable UUID packTypeId) {
         return this.packagingTypesService.findById(packTypeId);
     }
 
@@ -63,7 +63,7 @@ public class PackagingTypesController {
     @DeleteMapping("/{packTypeId}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteById(UUID packTypeId) {
+    public void deleteById(@PathVariable UUID packTypeId) {
         this.packagingTypesService.deleteById(packTypeId);
     }
 

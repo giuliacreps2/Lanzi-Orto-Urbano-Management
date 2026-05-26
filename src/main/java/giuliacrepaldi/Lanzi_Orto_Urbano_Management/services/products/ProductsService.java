@@ -59,6 +59,7 @@ public class ProductsService {
                 .productIsAvailable(body.productIsAvailable())
                 .createdAt(body.createdAt())
                 .productStatus(body.productStatus())
+                .productCategory(productCategoriesService.findById(body.productCategoryId()))
                 .build();
 
         log.info("PRODUCT NAME" + newProduct.getProductName());
