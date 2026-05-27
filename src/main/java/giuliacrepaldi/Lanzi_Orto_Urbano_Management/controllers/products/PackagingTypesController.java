@@ -26,7 +26,7 @@ public class PackagingTypesController {
 
 
     //POST
-    @PostMapping("/new-type")
+    @PostMapping("/new-pack")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public PackagingType createPackagingType(@RequestBody @Validated PackagingTypeDTO body, BindingResult validation) {
@@ -45,7 +45,11 @@ public class PackagingTypesController {
     }
 
     @GetMapping
-    public Page<PackagingType> findAll(int page, int size, String sortBy) {
+    public Page<PackagingType> findAll(Integer page, Integer size, String sortBy) {
+        if (page == null) page = 0;
+        if (size == null) size = 10;
+        if (sortBy == null) sortBy = "packTypeId";
+
         if (size > 100 || size < 0) size = 10;
         if (page < 0) page = 0;
         return this.packagingTypesService.findAll(page, size, sortBy);

@@ -7,5 +7,6 @@ public enum AttributeType {
     BOOLEAN,
     DATE,
     CURRENCY,
-    ARRAY
+    ARRAY,
+    ENUM
 }

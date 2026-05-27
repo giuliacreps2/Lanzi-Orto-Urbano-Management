@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/municipalities/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/products/catalog").permitAll()
+                .requestMatchers(HttpMethod.POST, "/products/**").hasAuthority("ADMIN")
                 .requestMatchers("/api/import/**").hasAuthority("ADMIN")
                 .requestMatchers("/roles/**").hasAuthority("ADMIN")
                 .requestMatchers("/auth/b2b/*/approve", "/auth/b2b/*/reject").permitAll()

@@ -47,7 +47,11 @@ public class ProductCategoriesController {
     }
 
     @GetMapping
-    public Page<ProductCategory> findAll(int page, int size, String sortBy) {
+    public Page<ProductCategory> findAll(Integer page, Integer size, String sortBy) {
+        if (page == null) page = 0;
+        if (size == null) size = 10;
+        if (sortBy == null) sortBy = "productCategoryId";
+
         if (size > 100 || size < 0) size = 10;
         if (page < 0) page = 0;
         return productCategoriesService.findAll(page, size, sortBy);

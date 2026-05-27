@@ -4,6 +4,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Product;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductCatalogDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductFormDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductsService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,9 +43,39 @@ public class ProductsController {
         return this.productsService.saveNewProduct(body);
     }
 
+
+//    @PostMapping("/new-compisite")
+//    @PreAuthorize("hasAuthority('ADMIN')")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public Product createCompositeProduct(@RequestBody @Validated ProductFormDTO body, BindingResult validation) {
+//        if (validation.hasErrors()) {
+//            List<String> errors = validation.getFieldErrors()
+//                    .stream().map(e -> e.getDefaultMessage()).toList();
+//            throw new ValidationException(errors);
+//        }
+//        return this.productsService.saveCompositeProduct(body);
+//    }
+
+    @PostMapping("/new-composite")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<Product> createCompositeProduct(
+            @RequestBody @Validated ProductFormDTO body,
+            BindingResult validation) {
+
+        if (validation.hasErrors()) {
+            List<String> errors = validation.getFieldErrors()
+                    .stream().map(FieldError::getDefaultMessage).toList();
+            throw new ValidationException(errors);
+        }
+
+        Product created = this.productsService.saveCompositeProduct(body);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
     //GET
     @GetMapping("/{productId}")
-    public Product findById(UUID productId) {
+    public Product findById(@PathVariable UUID productId) {
         return this.productsService.findById(productId);
     }
 
@@ -79,10 +111,39 @@ public class ProductsController {
     //UPDATE
     @PutMapping("/{productId}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.OK)
     public Product update(@PathVariable UUID productId, @RequestBody @Validated ProductDTO body) {
         return this.productsService.findByIdAndUpdateProduct(productId, body);
     }
+
+//    @PutMapping("/composite/{productId}")
+//    @PreAuthorize("hasAuthority('ADMIN')")
+//    @ResponseStatus(HttpStatus.OK)
+//    public Product updateCompositeProduct(@PathVariable UUID productId, @RequestBody @Validated ProductFormDTO body, BindingResult validation) {
+//        if (validation.hasErrors()) {
+//            List<String> errors = validation.getFieldErrors()
+//                    .stream().map(e -> e.getDefaultMessage()).toList();
+//            throw new ValidationException(errors);
+//        }
+//        return this.productsService.updateCompositeProduct(productId, body);
+//    }
+
+    @PutMapping("/composite/{productId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Product> updateCompositeProduct(@PathVariable UUID productId,
+                                                          @RequestBody @Validated ProductFormDTO body,
+                                                          BindingResult validation) {
+
+        if (validation.hasErrors()) {
+            List<String> errors = validation.getFieldErrors()
+                    .stream().map(FieldError::getDefaultMessage).toList();
+            throw new ValidationException(errors);
+        }
+
+        Product updated = this.productsService.updateCompositeProduct(productId, body);
+        return ResponseEntity.ok(updated);
+    }
+
 
     //SOFT DELETE
     @DeleteMapping("/{productId}")

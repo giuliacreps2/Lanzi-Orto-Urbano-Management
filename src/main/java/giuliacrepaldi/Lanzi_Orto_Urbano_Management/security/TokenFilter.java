@@ -38,6 +38,12 @@ public class TokenFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
         String authHeader = request.getHeader("Authorization");
 
 
@@ -48,20 +54,32 @@ public class TokenFilter extends OncePerRequestFilter {
 //            throw new UnauthorizedException("Invalid Token. Please provide a valid Token");
 
 
-        String accessToken = authHeader.replace("Bearer ", "");
+        String accessToken = authHeader.replace("Bearer ", "").trim();
 
-        UUID userDb = tokenTools.extractUserId(accessToken);
-        User user = usersService.findById(userDb);
+        if (accessToken.isEmpty() || accessToken.equalsIgnoreCase("null") || accessToken.equalsIgnoreCase("undefined")) {
+            log.info("Rilevato token testuale non valido (null/undefined) dal client per la rotta: {}", request.getServletPath());
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-        List<UserRole> listRoles = usersRolesService.findByUserId(userDb);
-        List<SimpleGrantedAuthority> authorities = listRoles
-                .stream()
-                .map(userRole -> new SimpleGrantedAuthority(userRole.getRole().getRoleName())).toList();
-        Authentication authenticationToken = new UsernamePasswordAuthenticationToken(user, null, authorities);
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        try {
+
+            UUID userDb = tokenTools.extractUserId(accessToken);
+            User user = usersService.findById(userDb);
+
+            List<UserRole> listRoles = usersRolesService.findByUserId(userDb);
+            List<SimpleGrantedAuthority> authorities = listRoles
+                    .stream()
+                    .map(userRole -> new SimpleGrantedAuthority(userRole.getRole().getRoleName())).toList();
+            Authentication authenticationToken = new UsernamePasswordAuthenticationToken(user, null, authorities);
+            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
 
-        log.info("TOKEN FILTER ACTIVE ON:" + request.getServletPath());
+            log.info("TOKEN FILTER ACTIVE ON: " + request.getServletPath());
+        } catch (Exception e) {
+            log.info("Errore durante la validazione del token sulla rotta {}: {}", request.getServletPath(), e.getMessage());
+            throw e;
+        }
         filterChain.doFilter(request, response);
     }
 

@@ -1,6 +1,7 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products;
 
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.PackagingCategory;
 import jakarta.persistence.*;
 import lombok.*;
@@ -40,5 +41,6 @@ public class PackagingType {
 
 
     @OneToOne(mappedBy = "packagingType")
+    @JsonManagedReference
     private ProductVariant productVariant;
 }

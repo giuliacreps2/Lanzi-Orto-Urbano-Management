@@ -1,15 +1,15 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.PriceList;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Product;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.ProductStatus;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductCatalogDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductFormDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.PriceListsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductCategoryAttributesRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductVariantsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductsRepository;
@@ -36,13 +36,17 @@ public class ProductsService {
     private final ProductCategoryAttributesRepository productCategoryAttributesRepository;
     private final ProductCategoriesService productCategoriesService;
     private final ProductVariantsRepository productVariantsRepository;
+    private final PriceListsRepository priceListsRepository;
+    private final PackagingTypesService packagingTypesService;
     private final UsersService usersService;
 
-    public ProductsService(ProductsRepository productsRepository, ProductCategoryAttributesRepository productCategoryAttributesRepository, ProductCategoriesService productCategoriesService, ProductVariantsRepository productVariantsRepository, UsersService usersService) {
+    public ProductsService(ProductsRepository productsRepository, ProductCategoryAttributesRepository productCategoryAttributesRepository, ProductCategoriesService productCategoriesService, ProductVariantsRepository productVariantsRepository, PriceListsRepository priceListsRepository, PackagingTypesService packagingTypesService, UsersService usersService) {
         this.productsRepository = productsRepository;
         this.productCategoryAttributesRepository = productCategoryAttributesRepository;
         this.productCategoriesService = productCategoriesService;
         this.productVariantsRepository = productVariantsRepository;
+        this.priceListsRepository = priceListsRepository;
+        this.packagingTypesService = packagingTypesService;
         this.usersService = usersService;
     }
 
@@ -75,6 +79,60 @@ public class ProductsService {
         return savedProduct;
     }
 
+
+    @Transactional
+    public Product saveCompositeProduct(ProductFormDTO body) {
+        ProductCategory category = this.productCategoriesService.findById(body.productCategoryId());
+
+        Product newProduct = Product.builder()
+                .productName(body.productName())
+                .productSlug(body.productSlug())
+                .productDescription(body.productDescription())
+                .shortProductDescription(body.shortProductDescription())
+                .availabilityStatus(body.availabilityStatus())
+                .productIsAvailable(body.productIsAvailable())
+                .productStatus(body.productStatus())
+                .productCategory(category)
+                .build();
+
+        Product savedProduct = productsRepository.save(newProduct);
+
+        PackagingType packType = this.packagingTypesService.findById(body.packTypeId());
+
+        ProductVariant newProdVar = ProductVariant.builder()
+                .skuVariant(body.skuVariant())
+                .activeVariant(body.activeVariant())
+                .netWeight(body.netWeight())
+                .unit(body.unit())
+                .technicalDetails(body.technicalDetails())
+                .product(savedProduct)
+                .packagingType(packType)
+                .build();
+
+        ProductVariant savedProdVar = productVariantsRepository.save(newProdVar);
+
+        PriceList b2cPrice = PriceList.builder()
+                .price(body.b2cPrice())
+                .minOrderQuantity(1)
+                .clientCategory(ClientCategory.B2C)
+                .productVariant(savedProdVar)
+                .build();
+
+        PriceList newB2cPrice = priceListsRepository.save(b2cPrice);
+
+        PriceList b2bPrice = PriceList.builder()
+                .price(body.b2bPrice())
+                .minOrderQuantity(body.b2bMinOrderQuantity() != null ? body.b2bMinOrderQuantity() : 1)
+                .clientCategory(ClientCategory.B2B)
+                .productVariant(savedProdVar)
+                .build();
+
+        PriceList newB2bPrice = priceListsRepository.save(b2bPrice);
+
+        return savedProduct;
+    }
+
+
     //REQUESTS
     public Product findById(UUID productId) {
         return this.productsRepository.findById(productId).orElseThrow(() -> new NotFoundException("Product not found"));
@@ -91,6 +149,7 @@ public class ProductsService {
 //        return this.productsRepository.findClientCategoryByUserId(userId);
 //    }
 //
+
 
     //RICHIESTA PER CAPIRE SE CLIENTE B2B/B2C
     public ClientCategory resolveClientCategory(User currentUser) {
@@ -201,6 +260,54 @@ public class ProductsService {
 
 
     @Transactional
+    public Product updateCompositeProduct(UUID productId, ProductFormDTO body) {
+        Product product = this.productsRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found"));
+
+        ProductCategory category = productCategoriesService.findById(body.productCategoryId());
+
+        product.setProductName(body.productName());
+        product.setProductSlug(body.productSlug());
+        product.setProductDescription(body.productDescription());
+        product.setShortProductDescription(body.shortProductDescription()); // ← era productDescription() per errore
+        product.setAvailabilityStatus(body.availabilityStatus());
+        product.setProductIsAvailable(body.productIsAvailable());
+        product.setProductStatus(body.productStatus());
+        product.setProductCategory(category);
+
+        Product savedProduct = this.productsRepository.save(product);
+
+        ProductVariant variant = this.productVariantsRepository.findByProductProductId(productId)
+                .orElseThrow(() -> new NotFoundException("Product Variant not found"));
+
+        PackagingType packagingType = this.packagingTypesService.findById(body.packTypeId());
+
+        variant.setSkuVariant(body.skuVariant());
+        variant.setActiveVariant(body.activeVariant());
+        variant.setNetWeight(body.netWeight());
+        variant.setUnit(body.unit());
+        variant.setTechnicalDetails(body.technicalDetails());
+        variant.setPackagingType(packagingType);
+
+        ProductVariant savedVariant = this.productVariantsRepository.save(variant);
+
+        List<PriceList> priceLists = this.priceListsRepository.findByProductVariantId(savedVariant.getVariantId()); // ← usare l'id della variant, non del product
+
+        for (PriceList priceList : priceLists) {
+            if (priceList.getClientCategory() == ClientCategory.B2C) {
+                priceList.setPrice(body.b2cPrice());
+            } else if (priceList.getClientCategory() == ClientCategory.B2B) {
+                priceList.setPrice(body.b2bPrice());
+                priceList.setMinOrderQuantity(body.b2bMinOrderQuantity() != null ? body.b2bMinOrderQuantity() : 1); // ← null-check mancante
+            }
+            priceListsRepository.save(priceList);
+        }
+
+        return savedProduct;
+    }
+
+
+    @Transactional
     public Product patchProduct(UUID productId, Map<String, Object> updates) {
 
         Product found = this.findById(productId);
@@ -263,5 +370,6 @@ public class ProductsService {
         log.info("Product deleted successfully, productId: {}", productId);
         productsRepository.deleteById(productId);
     }
+
 
 }
