@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -49,7 +50,7 @@ public class LabelsController {
 
     //GET
     @GetMapping("/{labelId}")
-    public Label findById(UUID labelId) {
+    public Label findById(@PathVariable UUID labelId) {
         return this.labelsService.findById(labelId);
     }
 
@@ -63,8 +64,13 @@ public class LabelsController {
     //UPDATE
     @PutMapping("/{labelId}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Label updateLabel(@PathVariable UUID labelId, @RequestBody @Validated LabelDTO body) {
+    @ResponseStatus(HttpStatus.OK)
+    public Label updateLabel(@PathVariable UUID labelId, @RequestBody @Validated LabelDTO body, BindingResult validation) {
+        if (validation.hasErrors()) {
+            List<String> errors = validation.getFieldErrors()
+                    .stream().map(e -> e.getDefaultMessage()).toList();
+            throw new ValidationException(errors);
+        }
         return this.labelsService.findByIdAndUpdateLabel(labelId, body);
     }
 
@@ -78,12 +84,21 @@ public class LabelsController {
 
 
     //STAMPA ETICHETTE
-    @GetMapping(value = "/{labelId}/label", produces = MediaType.IMAGE_JPEG_VALUE)
-    public byte[] getLabel(@PathVariable UUID labelId) throws Exception {
+
+    @PostMapping("/{labelId}/scan")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<String> scanLabel(@PathVariable UUID labelId) {
+        this.labelsService.processLabelScan(labelId);
+        return ResponseEntity.ok("Label scanned and inventory decremented");
+    }
+
+
+    @GetMapping(value = "/{labelId}/label", produces = MediaType.IMAGE_PNG_VALUE)
+    public byte[] getBarcode(@PathVariable UUID labelId) throws Exception {
         Label label = this.labelsService.findById(labelId);
-        BufferedImage writer = barcodeGenerator.generateBarcode128(label.getBarCodeGs1());
+        BufferedImage image = barcodeGenerator.generateBarcode128(label.getBarCodeGs1());
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ImageIO.write(writer, "png", out);
+        ImageIO.write(image, "png", out);
 
         return out.toByteArray();
     }

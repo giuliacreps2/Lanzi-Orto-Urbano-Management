@@ -16,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.UUID;
 
@@ -44,14 +46,18 @@ public class LabelsService {
         Batch batch = this.batchesService.findById(body.batchId());
         ProductVariant productVariant = this.productVariantsService.findById(body.productVariantId());
 
+        //AUTOMAZIONE GS1
+        String generatedGs1Code = generateGs1String(productVariant.getSkuVariant(), body.productionDate(), batch.getBatchCode());
+
         Label newLabel = Label.builder()
+                .barCodeGs1(generatedGs1Code)
                 .barCodeGs1(body.barCodeGs1())
                 .barcodeData(body.barcodeData())
                 .productionDate(body.productionDate())
                 .bestBeforeDate(body.bestBeforeDate())
                 .exitDate(body.exitDate())
                 .printedAt(body.printedAt())
-                .inventoryDecremented(body.inventoryDecremented())
+                .inventoryDecremented(false)
                 .batch(batch)
                 .productVariant(productVariant)
                 .build();
@@ -60,6 +66,14 @@ public class LabelsService {
         log.info("Label saved successfully, {}", savedLabel);
 
         return savedLabel;
+    }
+
+    private String generateGs1String(String skuVariant, LocalDate prodDate, String batchCode) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String dateString = prodDate.format(formatter);
+
+        //COSTRUZIONE STRINGA: 01 = SKU, 11 = DATA PROD, 10 = LOTTO
+        return "01" + skuVariant + "11" + dateString + "10" + batchCode;
     }
 
     //REQUESTS
@@ -81,19 +95,23 @@ public class LabelsService {
 
         Label found = this.findById(labelId);
 
-        found.setBarCodeGs1(body.barCodeGs1());
+        if (!found.getBatch().getBatchId().equals(body.batchId())) {
+            found.setBatch(batchesService.findById(body.batchId()));
+        }
+
+        if (!found.getProductVariant().getVariantId().equals(body.productVariantId())) {
+            found.setProductVariant(productVariantsService.findById(body.productVariantId()));
+        }
+
         found.setBarcodeData(body.barcodeData());
         found.setProductionDate(body.productionDate());
         found.setBestBeforeDate(body.bestBeforeDate());
         found.setExitDate(body.exitDate());
         found.setPrintedAt(body.printedAt());
         found.setInventoryDecremented(body.inventoryDecremented());
-        found.setBatch(batchesService.findById(body.batchId()));
-        found.setProductVariant(productVariantsService.findById(body.productVariantId()));
 
-        if (!found.getBatch().getBatchId().equals(body.batchId())) {
-            found.setBatch(batchesService.findById(body.batchId()));
-        }
+        //RICALCOLO CODICE, SE CAMVìBIANO I DATI
+        found.setBarCodeGs1(generateGs1String(found.getProductVariant().getSkuVariant(), found.getProductionDate(), found.getBatch().getBatchCode()));
 
         Label updated = this.labelsRepository.save(found);
         log.info("Label updated successfully, {}", updated);
@@ -110,6 +128,7 @@ public class LabelsService {
 
 
     //ETICHETTE REALI
+    @Transactional
     public void processLabelScan(UUID labelId) {
 
         Label found = this.findById(labelId);

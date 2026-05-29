@@ -40,7 +40,7 @@ public class BatchesController {
 
     //GET
     @GetMapping("/{batchId}")
-    public Batch findById(UUID batchId) {
+    public Batch findById(@PathVariable UUID batchId) {
         return this.batchesService.findById(batchId);
     }
 
@@ -54,16 +54,21 @@ public class BatchesController {
     //UPDATE
     @PutMapping("/{batchId}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Batch update(@PathVariable UUID batchId, @RequestBody @Validated BatchDTO body) {
-        return this.batchesService.findByIdAndUpdateBAtch(batchId, body);
+    @ResponseStatus(HttpStatus.OK)
+    public Batch update(@PathVariable UUID batchId, @RequestBody @Validated BatchDTO body, BindingResult validation) {
+        if (validation.hasErrors()) {
+            List<String> errors = validation.getFieldErrors()
+                    .stream().map(e -> e.getDefaultMessage()).toList();
+            throw new ValidationException(errors);
+        }
+        return this.batchesService.findByIdAndUpdateBatch(batchId, body);
     }
 
 
     //DELETE
     @DeleteMapping("/{batchId}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteById(@PathVariable UUID batchId) {
         this.batchesService.deleteBatchById(batchId);
     }

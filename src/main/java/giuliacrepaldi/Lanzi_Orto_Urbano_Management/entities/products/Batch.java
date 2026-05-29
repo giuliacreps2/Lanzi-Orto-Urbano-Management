@@ -34,6 +34,11 @@ public class Batch {
     private StatusBatch statusBatch;
 
     @Column(nullable = false)
+    private LocalDateTime orderCreatedAt;
+   
+    private LocalDateTime orderUpdatedAt;
+
+    @Column(nullable = false)
     private double quantityPlanned;
     @Column(nullable = false)
     private double quantityActual;

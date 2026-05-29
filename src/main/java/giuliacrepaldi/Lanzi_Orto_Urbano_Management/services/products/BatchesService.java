@@ -1,6 +1,7 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.BatchDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.BatchesRepository;
@@ -29,6 +30,8 @@ public class BatchesService {
     //CREATE
     public Batch saveNewBatch(BatchDTO body) {
 
+        ProductVariant variant = this.productVariantsService.findById(body.productVariantId());
+
         Batch newBatch = Batch.builder()
                 .batchCode(body.batchCode())
                 .statusBatch(body.statusBatch())
@@ -38,6 +41,7 @@ public class BatchesService {
                 .expectedHarvestDate(body.expectedHarvestDate())
                 .actualHarvestDate(body.actualHarvestDate())
                 .batchMetadata(body.batchMetadata())
+                .productVariant(variant)
                 .build();
 
         Batch savedBatch = batchesRepository.save(newBatch);
@@ -60,7 +64,7 @@ public class BatchesService {
 
     //UPDATE
 
-    public Batch findByIdAndUpdateBAtch(UUID batchId, BatchDTO body) {
+    public Batch findByIdAndUpdateBatch(UUID batchId, BatchDTO body) {
         if (!batchesRepository.existsById(batchId)) throw new NotFoundException("Batch not found");
 
         Batch found = this.findById(batchId);
@@ -84,8 +88,8 @@ public class BatchesService {
     //DELETE
     public void deleteBatchById(UUID batchId) {
         if (!batchesRepository.existsById(batchId)) throw new NotFoundException("Batch not found");
-        log.info("Batch deleted successfully, {}", batchId);
         batchesRepository.deleteById(batchId);
+        log.info("Batch deleted successfully, {}", batchId);
     }
 
 }
