@@ -4,6 +4,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Getter
@@ -26,7 +27,7 @@ public class PriceList {
     private ClientCategory clientCategory;
 
     @Column(nullable = false)
-    private double price;
+    private BigDecimal price;
 
     private Integer minOrderQuantity;
 

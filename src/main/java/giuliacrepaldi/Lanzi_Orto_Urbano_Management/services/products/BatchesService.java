@@ -92,4 +92,7 @@ public class BatchesService {
         log.info("Batch deleted successfully, {}", batchId);
     }
 
+    public Batch findAvailableBatchForVariant(UUID variantId) {
+        return null;
+    }
 }

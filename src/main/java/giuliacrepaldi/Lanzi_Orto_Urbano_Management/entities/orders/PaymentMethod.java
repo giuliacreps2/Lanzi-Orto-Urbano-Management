@@ -1,7 +1,5 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProfile;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2cProfile;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.PaymentType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,11 +32,4 @@ public class PaymentMethod {
     @Column(columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> billingDetails;
 
-    @OneToOne
-    @JoinColumn(name = "b2cProfileId", nullable = false)
-    private B2cProfile b2cProfile;
-
-    @OneToOne
-    @JoinColumn(name = "b2bProfileId", nullable = false)
-    private B2bProfile b2bProfile;
 }

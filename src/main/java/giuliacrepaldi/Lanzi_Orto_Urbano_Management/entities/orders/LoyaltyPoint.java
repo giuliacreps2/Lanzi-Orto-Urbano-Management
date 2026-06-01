@@ -1,5 +1,7 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders;
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProfile;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2cProfile;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,7 +18,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "loyalty_points")
-public class LoyaltyPoints {
+public class LoyaltyPoint {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -33,10 +35,18 @@ public class LoyaltyPoints {
 
 
     @ManyToOne
-    @JoinColumn(name = "trayReturnId", nullable = false)
+    @JoinColumn(name = "trayReturnId")
     private TrayReturn trayReturn;
 
     @ManyToOne
     @JoinColumn(name = "orderId", nullable = false)
     private Order order;
+
+    @ManyToOne
+    @JoinColumn(name = "b2c_profile_id")
+    private B2cProfile b2cProfile;
+
+    @ManyToOne
+    @JoinColumn(name = "b2b_profile_id")
+    private B2bProfile b2bProfile;
 }

@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -97,6 +98,11 @@ public class B2bProfilesService {
         found.setTypeActivity(body.typeActivity());
 
         return this.b2bProfilesRepository.save(found);
+    }
+    
+    @Transactional
+    public B2bProfile save(B2bProfile b2bProfile) {
+        return this.b2bProfilesRepository.save(b2bProfile);
     }
 
 

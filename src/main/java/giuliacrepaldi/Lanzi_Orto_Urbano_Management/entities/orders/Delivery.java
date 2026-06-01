@@ -52,11 +52,11 @@ public class Delivery {
     private Map<String, Object> shippingAddress;
 
     @ManyToOne
-    @JoinColumn(name = "b2cProfileId", nullable = false)
+    @JoinColumn(name = "b2cProfileId")
     private B2cProfile b2cProfile;
 
     @ManyToOne
-    @JoinColumn(name = "b2bProfileId", nullable = false)
+    @JoinColumn(name = "b2bProfileId")
     private B2bProfile b2bProfile;
 
 }

@@ -3,10 +3,5 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.orders;
 import org.springframework.stereotype.Service;
 
 @Service
-public class TrayReturnsService {
-
-
-//    public LoyaltyPoint getPointsAwarded() {
-//    }
+public class PaymentMethodsService {
 }
-

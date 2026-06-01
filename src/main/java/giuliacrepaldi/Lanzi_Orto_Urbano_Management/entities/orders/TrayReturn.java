@@ -39,18 +39,18 @@ public class TrayReturn {
     @Column(nullable = false)
     private LocalDateTime validatedTrayAt;
 
-    @Column(nullable = false)
+    @Column
     private boolean validatedByAdmin;
 
     private String notesTrayRejected;
 
 
     @ManyToOne
-    @JoinColumn(name = "b2cProfileId", nullable = false)
+    @JoinColumn(name = "b2c_profile_id")
     private B2cProfile b2cProfile;
 
     @ManyToOne
-    @JoinColumn(name = "b2bProfileId", nullable = false)
+    @JoinColumn(name = "b2b_profile_id")
     private B2bProfile b2bProfile;
 
 

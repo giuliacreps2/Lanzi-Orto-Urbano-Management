@@ -13,7 +13,7 @@ public record ProductCatalogDTO(
         String skuVariant,
         double netWeight,
         String unit,
-        double price,
+        java.math.BigDecimal price,
         ClientCategory clientCategory,
         String priceLabel,
         Integer minOrderQuantity,

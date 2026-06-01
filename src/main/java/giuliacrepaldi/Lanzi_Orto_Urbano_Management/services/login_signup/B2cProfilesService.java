@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -69,5 +70,10 @@ public class B2cProfilesService {
         found.setAvatar("https://ui-avatars.com/api?name=" + body.name() + "+" + body.surname());
 
         return this.b2cProfilesRepository.save(found);
+    }
+
+    @Transactional
+    public B2cProfile save(B2cProfile b2cProfile) {
+        return this.b2cProfilesRepository.save(b2cProfile);
     }
 }

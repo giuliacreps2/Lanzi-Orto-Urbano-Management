@@ -23,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -112,7 +113,7 @@ public class ProductsService {
         ProductVariant savedProdVar = productVariantsRepository.save(newProdVar);
 
         PriceList b2cPrice = PriceList.builder()
-                .price(body.b2cPrice())
+                .price(BigDecimal.valueOf(body.b2cPrice()))
                 .minOrderQuantity(1)
                 .clientCategory(ClientCategory.B2C)
                 .productVariant(savedProdVar)
@@ -121,7 +122,7 @@ public class ProductsService {
         PriceList newB2cPrice = priceListsRepository.save(b2cPrice);
 
         PriceList b2bPrice = PriceList.builder()
-                .price(body.b2bPrice())
+                .price(BigDecimal.valueOf(body.b2bPrice()))
                 .minOrderQuantity(body.b2bMinOrderQuantity() != null ? body.b2bMinOrderQuantity() : 1)
                 .clientCategory(ClientCategory.B2B)
                 .productVariant(savedProdVar)
@@ -295,9 +296,9 @@ public class ProductsService {
 
         for (PriceList priceList : priceLists) {
             if (priceList.getClientCategory() == ClientCategory.B2C) {
-                priceList.setPrice(body.b2cPrice());
+                priceList.setPrice(BigDecimal.valueOf(body.b2cPrice()));
             } else if (priceList.getClientCategory() == ClientCategory.B2B) {
-                priceList.setPrice(body.b2bPrice());
+                priceList.setPrice(BigDecimal.valueOf(body.b2bPrice()));
                 priceList.setMinOrderQuantity(body.b2bMinOrderQuantity() != null ? body.b2bMinOrderQuantity() : 1); // ← null-check mancante
             }
             priceListsRepository.save(priceList);

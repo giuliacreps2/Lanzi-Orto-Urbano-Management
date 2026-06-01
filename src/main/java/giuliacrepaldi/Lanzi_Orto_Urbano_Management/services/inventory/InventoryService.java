@@ -4,11 +4,13 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.inventory.Inventory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Label;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Product;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.AvailabilityStatus;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.inventory.InventoryDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.inventory.InventoryRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductsRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductVariantsService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,20 +30,25 @@ public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final ProductsRepository productsRepository;
+    private final ProductVariantsService productVariantsService;
 
-    public InventoryService(InventoryRepository inventoryRepository, ProductsRepository productsRepository) {
+    public InventoryService(InventoryRepository inventoryRepository, ProductsRepository productsRepository, ProductVariantsService productVariantsService) {
         this.inventoryRepository = inventoryRepository;
         this.productsRepository = productsRepository;
+        this.productVariantsService = productVariantsService;
     }
 
     //CREATE
     public Inventory saveNewInventory(InventoryDTO body) {
+        ProductVariant variant = this.productVariantsService.findById(body.variant());
+
 
         Inventory inventory = Inventory.builder()
                 .inventoryName(body.inventoryName())
                 .currentQuantity(body.currentQuantity())
                 .unit(body.unit())
                 .minThreshold(body.minThreshold())
+                .productVariant(variant)
                 .build();
 
         Inventory savedInventory = this.inventoryRepository.save(inventory);
@@ -123,5 +130,12 @@ public class InventoryService {
 
     public void executeDecrement(String componentKey, Double amount, String batchId) {
 
+    }
+
+    public void updateQuantity(UUID inventoryId, double quantity) {
+        Inventory found = this.inventoryRepository.findById(inventoryId).orElseThrow(() -> new NotFoundException("Inventory not found"));
+
+        found.setCurrentQuantity(found.getCurrentQuantity() + (int) quantity);
+        this.inventoryRepository.save(found);
     }
 }

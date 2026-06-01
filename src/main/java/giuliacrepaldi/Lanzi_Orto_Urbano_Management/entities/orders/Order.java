@@ -50,13 +50,14 @@ public class Order {
     private boolean reorderedFormByAdmin;
 
     @Column(nullable = false)
-    private LocalDateTime orderCreatedAt;
-    
+    private LocalDateTime orderCreatedAt = LocalDateTime.now();
+
     private LocalDateTime orderUpdatedAt;
 
+    @Column(nullable = false)
+    private boolean loyaltyPointsUsed;
 
-    private Integer loyaltyPointsUsed;
-    private Double loyaltyDiscount;
+    private BigDecimal loyaltyDiscount;
 
     @Column(nullable = false)
     private BigDecimal totalAmount;
@@ -87,5 +88,6 @@ public class Order {
     @JoinColumn(name = "subscription_id")
     private Subscription subscription;
 
+    //TODO MANCA LA RELAZIONE CON LOYALTY POINT?
 
 }

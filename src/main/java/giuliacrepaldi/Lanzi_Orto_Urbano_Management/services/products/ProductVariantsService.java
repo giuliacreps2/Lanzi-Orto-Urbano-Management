@@ -2,8 +2,10 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductVariantDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.PriceListsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductVariantsRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -13,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Slf4j
@@ -23,12 +26,14 @@ public class ProductVariantsService {
     private final PriceListsService priceListsService;
     private final PackagingTypesService packagingTypesService;
     private final ProductsService productsService;
+    private final PriceListsRepository priceListsRepository;
 
-    public ProductVariantsService(@Lazy ProductVariantsRepository productVariantsRepository, @Lazy PriceListsService priceListsService, @Lazy PackagingTypesService packagingTypesService, ProductsService productsService) {
+    public ProductVariantsService(@Lazy ProductVariantsRepository productVariantsRepository, @Lazy PriceListsService priceListsService, @Lazy PackagingTypesService packagingTypesService, ProductsService productsService, PriceListsRepository priceListsRepository) {
         this.productVariantsRepository = productVariantsRepository;
         this.priceListsService = priceListsService;
         this.packagingTypesService = packagingTypesService;
         this.productsService = productsService;
+        this.priceListsRepository = priceListsRepository;
     }
 
     //CREATE
@@ -96,5 +101,9 @@ public class ProductVariantsService {
         if (!productVariantsRepository.existsById(variantId)) throw new NotFoundException("Product Variant not found");
         log.info("Product deleted successfully, productId: {}", variantId);
         productVariantsRepository.deleteById(variantId);
+    }
+
+    public BigDecimal resolvePriceForQuantity(UUID variantId, ClientCategory category, Integer quantity) {
+        return this.priceListsService.resolvePriceForVariant(variantId, category, quantity);
     }
 }

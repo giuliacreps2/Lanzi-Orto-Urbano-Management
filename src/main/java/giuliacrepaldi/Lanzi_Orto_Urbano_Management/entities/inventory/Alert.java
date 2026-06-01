@@ -1,5 +1,7 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.inventory;
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Order;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.TrayReturn;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.inventory.ChannelAlert;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.inventory.StatusAlert;
@@ -53,14 +55,14 @@ public class Alert {
     @JoinColumn(name = "inventory_id")
     private Inventory inventory;
 
-//
-//    @ManyToOne
-//    @JoinColumn(name = "order_id")
-//    private Order order;
-//
-//    @ManyToOne
-//    @JoinColumn(name= "tray_return_id")
-//    private TrayReturn trayReturn;
-//
-//
+
+    @ManyToOne
+    @JoinColumn(name = "order_id")
+    private Order order;
+
+    @ManyToOne
+    @JoinColumn(name = "tray_return_id")
+    private TrayReturn trayReturn;
+
+
 }

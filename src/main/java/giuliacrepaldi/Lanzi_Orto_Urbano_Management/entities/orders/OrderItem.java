@@ -5,6 +5,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVari
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Getter
@@ -27,7 +28,7 @@ public class OrderItem {
     private Integer quantity;
 
     @Column(nullable = false)
-    private Double price;
+    private BigDecimal price;
 
     @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
@@ -41,4 +42,6 @@ public class OrderItem {
     @ManyToOne
     @JoinColumn(name = "batch_id", nullable = false)
     private Batch batch;
+
+
 }

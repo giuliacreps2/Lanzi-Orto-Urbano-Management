@@ -3,6 +3,7 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.PriceList;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.PriceListDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.PriceListsRepository;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Slf4j
@@ -39,7 +41,7 @@ public class PriceListsService {
         ClientCategory category = body.clientCategory() != null ? body.clientCategory() : ClientCategory.B2C;
 
         PriceList newPriceList = PriceList.builder()
-                .price(body.price())
+                .price(BigDecimal.valueOf(body.price()))
                 .minOrderQuantity(body.minOrderQuantity())
                 .clientCategory(category)
                 .productVariant(variant)
@@ -50,6 +52,23 @@ public class PriceListsService {
 
         return savedPriceList;
     }
+
+
+    //METODI CUSTOM
+    public BigDecimal resolvePriceForVariant(UUID productVariantId, ClientCategory category, Integer quantity) {
+        PriceList priceList = this.priceListsRepository
+                .findByProductVariant_VariantIdAndClientCategory(productVariantId, category);
+
+        if (category == ClientCategory.B2B) {
+            Integer minOrderQuantity = priceList.getMinOrderQuantity();
+            if (minOrderQuantity != null && quantity < minOrderQuantity) {
+                throw new BadRequestException("Minimum Order Quantity exceeded");
+            }
+        }
+
+        return priceList.getPrice();
+    }
+
 
     //REQUESTS
     public PriceList findById(UUID priceListId) {
@@ -70,7 +89,7 @@ public class PriceListsService {
 
         PriceList found = this.findById(priceListId);
 
-        found.setPrice(body.price());
+        found.setPrice(BigDecimal.valueOf(body.price()));
         found.setMinOrderQuantity(body.minOrderQuantity());
         found.setClientCategory(body.clientCategory());
         found.setProductVariant(productVariantsService.findById(body.productVariantId()));

@@ -34,19 +34,22 @@ public class Batch {
     private StatusBatch statusBatch;
 
     @Column(nullable = false)
-    private LocalDateTime orderCreatedAt;
-   
-    private LocalDateTime orderUpdatedAt;
+    private LocalDateTime batchCreatedAt;
+
+    private LocalDateTime batchUpdatedAt;
 
     @Column(nullable = false)
     private double quantityPlanned;
     @Column(nullable = false)
     private double quantityActual;
-    @Column(nullable = false)
+
+    @Column
     private LocalDateTime startedAt;
+
     @Column(nullable = false)
     private LocalDate expectedHarvestDate;
-    @Column(nullable = false)
+
+    @Column
     private LocalDate actualHarvestDate;
 
     @JdbcTypeCode(SqlTypes.JSON)
