@@ -1,9 +1,12 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.controllers.orders;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Order;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusOrder;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.AdminOrderDetailDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.CheckoutDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.orders.OrdersService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
@@ -59,5 +62,38 @@ public class OrdersController {
     public Order applyLoyaltyDiscount(@PathVariable UUID orderId, @RequestBody @Validated CheckoutDTO body) {
         return this.ordersService.findByIdAndApplyLoyaltyDiscount(orderId, body);
     }
+
+    //GET
+    @GetMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public Page<Order> findAllOrders(int page, int size, String sortBy) {
+        if (size > 100 || size < 0) size = 10;
+        if (page < 0) page = 0;
+        return this.ordersService.findAll(page, size, sortBy);
+    }
+
+    @GetMapping("/{orderId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public Order findOrderById(@PathVariable UUID orderId) {
+        return this.ordersService.findById(orderId);
+    }
+
+
+    //PATCH: cambio stato ordine
+    @PatchMapping("/{orderId}/status")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.OK)
+    public Order updateOrderStatus(@PathVariable UUID orderId, @RequestParam StatusOrder statusOrder) {
+        return this.ordersService.findByIdAndUpdateOrderStatus(orderId, statusOrder);
+    }
+
+
+    @GetMapping("/{orderId}/detail")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.OK)
+    public AdminOrderDetailDTO findAdminOrderDetail(@PathVariable UUID orderId) {
+        return this.ordersService.findAdminOrderDetailById(orderId);
+    }
+
 
 }

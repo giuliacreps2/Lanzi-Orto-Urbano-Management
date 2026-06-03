@@ -11,8 +11,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusDeliveryTy
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusOrder;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.CheckoutDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.OrderItemDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.LoyaltyPointsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.OrderItemsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.OrdersRepository;
@@ -23,6 +22,10 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.BatchesServ
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.PriceListsService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductVariantsService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -364,6 +367,109 @@ public class OrdersService {
         found.setLoyaltyPointsUsed(true);
 
         return this.ordersRepository.save(found);
+    }
+
+    public Order findById(UUID orderId) {
+        return this.ordersRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
+    }
+
+    public Page<Order> findAll(int page, int size, String sortBy) {
+        if (size > 100 || size < 0) size = 10;
+        if (page < 0) page = 0;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
+
+        return this.ordersRepository.findAll(pageable);
+    }
+
+
+    public Order startProcessingOrder(UUID orderId) {
+        Order found = this.findById(orderId);
+
+        if (found.getStatusOrder() == StatusOrder.CANCELLED) {
+            throw new BadRequestException("Cannot start production for a cancelled order");
+        }
+
+        if (found.getStatusOrder() == StatusOrder.COMPLETED) {
+            throw new BadRequestException("Cannot start production for a completed order");
+        }
+
+        found.setStatusOrder(StatusOrder.PROCESSING);
+        found.setOrderCreatedAt(LocalDateTime.now());
+
+        return this.ordersRepository.save(found);
+    }
+
+
+    public AdminOrderDetailDTO findAdminOrderDetailById(UUID orderId) {
+        Order found = this.findById(orderId);
+
+        AdminOrderCustomerDTO customerDTO;
+
+        if (found.getB2cProfile() != null) {
+            customerDTO = new AdminOrderCustomerDTO(
+                    "B2C",
+                    found.getB2cProfile().getName() + " " + found.getB2cProfile().getSurname(),
+                    found.getB2cProfile().getUser() != null ? found.getB2cProfile().getUser().getEmail() : null,
+                    found.getB2cProfile().getPhoneNumber(),
+                    null,
+                    null
+            );
+        } else {
+            customerDTO = new AdminOrderCustomerDTO(
+                    "B2B",
+                    found.getB2bProfile().getContactName() + " " + found.getB2bProfile().getContactSurname(),
+                    found.getB2bProfile().getContactEmail(),
+                    found.getB2bProfile().getContactPhone(),
+                    found.getB2bProfile().getCompanyName(),
+                    null
+            );
+        }
+
+        AdminOrderDeliveryDTO deliveryDTO = new AdminOrderDeliveryDTO(
+                found.getDelivery().getRecipientName(),
+                found.getDelivery().getDeliveryDate(),
+                found.getDelivery().getStatusDeliveryType().name(),
+                found.getDelivery().getShippingAddress()
+        );
+
+        List<AdminOrderItemDTO> itemsDTOs = found.getItems().stream()
+                .map(item -> new AdminOrderItemDTO(
+                        item.getOrderItemId(),
+                        item.getQuantity(),
+                        item.getPrice(),
+
+                        item.getProductVariant().getProduct().getProductName(),
+                        item.getProductVariant().getProduct().getProductCategory().getNameProdCategory(),
+                        item.getProductVariant().getVariantId(),
+                        item.getProductVariant().getSkuVariant(),
+                        item.getProductVariant().getNetWeight(),
+                        item.getProductVariant().getUnit().name(),
+
+                        item.getBatch().getBatchId(),
+                        item.getBatch().getBatchCode(),
+                        item.getBatch().getExpectedHarvestDate(),
+
+                        item.getProductVariant().getTechnicalDetails(),
+                        item.getLabels() != null ? item.getLabels().size() : 0
+                ))
+                .toList();
+
+        return new AdminOrderDetailDTO(
+                found.getOrderId(),
+                "ORD-" + found.getOrderId().toString().substring(0, 8).toUpperCase(),
+                found.getStatusOrder(),
+                found.getSourceOrder(),
+                found.getDeliveryType(),
+                found.getOrderCreatedAt(),
+                found.getOrderUpdatedAt(),
+                found.getTotalAmount(),
+                found.getOrderNotes(),
+                customerDTO,
+                deliveryDTO,
+                itemsDTOs
+        );
+
     }
 }
 

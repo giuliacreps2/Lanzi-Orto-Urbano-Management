@@ -88,6 +88,4 @@ public class Order {
     @JoinColumn(name = "subscription_id")
     private Subscription subscription;
 
-    //TODO MANCA LA RELAZIONE CON LOYALTY POINT?
-
 }

@@ -1,5 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products;
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.OrderItem;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -46,4 +47,8 @@ public class Label {
     @ManyToOne
     @JoinColumn(name = "variant_id")
     private ProductVariant productVariant;
+
+    @ManyToOne
+    @JoinColumn(name = "order_item_id", nullable = false)
+    private OrderItem orderItem;
 }

@@ -61,6 +61,13 @@ public class LabelsController {
         return this.labelsService.findAll(page, size, sortBy);
     }
 
+    @GetMapping("/order/{orderId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.OK)
+    public List<Label> findAllLabelsByOrder(@PathVariable UUID orderId) {
+        return this.labelsService.findAllByOrderId(orderId);
+    }
+
     //UPDATE
     @PutMapping("/{labelId}")
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -90,6 +97,14 @@ public class LabelsController {
     public ResponseEntity<String> scanLabel(@PathVariable UUID labelId) {
         this.labelsService.processLabelScan(labelId);
         return ResponseEntity.ok("Label scanned and inventory decremented");
+    }
+
+
+    @PostMapping("/order/{orderId}/generate")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<Label> generateLabel(@PathVariable UUID orderId) {
+        return this.labelsService.generateLabelFromOrderId(orderId);
     }
 
 

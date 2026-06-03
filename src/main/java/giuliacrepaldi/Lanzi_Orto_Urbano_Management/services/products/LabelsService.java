@@ -1,13 +1,18 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Order;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.OrderItem;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Label;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusOrder;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.LabelDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.LabelsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.inventory.InventoryService;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.orders.OrderItemsService;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.orders.OrdersService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -18,6 +23,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,13 +36,19 @@ public class LabelsService {
     private final BatchesService batchesService;
     private final ProductVariantsService productVariantsService;
     private final InventoryService inventoryService;
+    private final OrdersService ordersService;
+    private final OrderItemsService orderItemsService;
+    private final LabelCodeService labelCodeService;
 
 
-    public LabelsService(LabelsRepository labelsRepository, BatchesService batchesService, ProductVariantsService productVariantsService, InventoryService inventoryService) {
+    public LabelsService(LabelsRepository labelsRepository, BatchesService batchesService, ProductVariantsService productVariantsService, InventoryService inventoryService, OrdersService ordersService, OrderItemsService orderItemsService, LabelCodeService labelCodeService) {
         this.labelsRepository = labelsRepository;
         this.batchesService = batchesService;
         this.productVariantsService = productVariantsService;
         this.inventoryService = inventoryService;
+        this.ordersService = ordersService;
+        this.orderItemsService = orderItemsService;
+        this.labelCodeService = labelCodeService;
     }
 
 
@@ -86,6 +99,10 @@ public class LabelsService {
         if (page < 0) page = 0;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
         return this.labelsRepository.findAll(pageable);
+    }
+
+    public List<Label> findAllByOrderId(UUID orderId) {
+        return this.labelsRepository.findByOrderItem_Order_OrderId(orderId);
     }
 
     //UPDATE
@@ -155,4 +172,50 @@ public class LabelsService {
     }
 
 
+    //GENERAZIONE ETICHETTE DALL'ORDINE
+    @Transactional
+    public List<Label> generateLabelFromOrderId(UUID orderId) {
+        Order foundOrder = this.ordersService.startProcessingOrder(orderId);
+
+        if (foundOrder.getStatusOrder() == StatusOrder.CANCELLED) {
+            throw new BadRequestException("Cannot generate labels for a cancelled order");
+        }
+
+        List<OrderItem> foundItems = this.orderItemsService.findAllByOrderId(orderId);
+
+        if (foundItems.isEmpty()) throw new BadRequestException("Cannot generate labels: order has no items");
+
+        List<Label> generatedLabels = new ArrayList<>();
+
+        for (OrderItem foundItem : foundItems) {
+
+            boolean labelsAlreadyExist = this.labelsRepository.existsByOrderItem_OrderItemId(
+                    foundItem.getOrderItemId()
+            );
+
+            if (labelsAlreadyExist) {
+                continue;
+            }
+
+            for (int i = 0; i < foundItem.getQuantity(); i++) {
+
+                Label newLabel = Label.builder()
+                        .orderItem(foundItem)
+                        .batch(foundItem.getBatch())
+                        .productVariant(foundItem.getProductVariant())
+                        .barCodeGs1(this.labelCodeService.generateLabelCode(foundItem, i))
+                        .build();
+
+                Label savedLabel = this.labelsRepository.save(newLabel);
+                generatedLabels.add(savedLabel);
+            }
+        }
+
+        if (generatedLabels.isEmpty()) {
+            return this.labelsRepository.findByOrderItem_Order_OrderId(foundOrder.getOrderId());
+        }
+
+        return generatedLabels;
+
+    }
 }
