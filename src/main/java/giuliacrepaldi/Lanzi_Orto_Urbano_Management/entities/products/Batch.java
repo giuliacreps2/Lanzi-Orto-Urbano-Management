@@ -60,4 +60,6 @@ public class Batch {
     @ManyToOne
     @JoinColumn(name = "variant_id")
     private ProductVariant productVariant;
+
+
 }

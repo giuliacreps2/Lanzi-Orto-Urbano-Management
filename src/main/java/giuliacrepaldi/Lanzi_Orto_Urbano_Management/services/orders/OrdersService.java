@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -436,25 +437,38 @@ public class OrdersService {
         );
 
         List<AdminOrderItemDTO> itemsDTOs = found.getItems().stream()
-                .map(item -> new AdminOrderItemDTO(
-                        item.getOrderItemId(),
-                        item.getQuantity(),
-                        item.getPrice(),
+                .map(item -> {
+                    UUID batchId = (item.getBatch() != null) ? item.getBatch().getBatchId() : null;
+                    String batchCode = (item.getBatch() != null) ? item.getBatch().getBatchCode() : null;
+                    LocalDate expectedHarvestDate = (item.getBatch() != null) ? item.getBatch().getExpectedHarvestDate() : null;
 
-                        item.getProductVariant().getProduct().getProductName(),
-                        item.getProductVariant().getProduct().getProductCategory().getNameProdCategory(),
-                        item.getProductVariant().getVariantId(),
-                        item.getProductVariant().getSkuVariant(),
-                        item.getProductVariant().getNetWeight(),
-                        item.getProductVariant().getUnit().name(),
+                    String categoryName = null;
+                    if (item.getProductVariant() != null && item.getProductVariant().getProduct() != null
+                            && item.getProductVariant().getProduct().getProductCategory() != null) {
+                        categoryName = item.getProductVariant().getProduct().getProductCategory().getNameProdCategory();
+                    }
 
-                        item.getBatch().getBatchId(),
-                        item.getBatch().getBatchCode(),
-                        item.getBatch().getExpectedHarvestDate(),
 
-                        item.getProductVariant().getTechnicalDetails(),
-                        item.getLabels() != null ? item.getLabels().size() : 0
-                ))
+                    return new AdminOrderItemDTO(
+                            item.getOrderItemId(),
+                            item.getQuantity(),
+                            item.getPrice(),
+
+                            item.getProductVariant().getProduct().getProductName(),
+                            item.getProductVariant().getProduct().getProductCategory().getNameProdCategory(),
+                            item.getProductVariant().getVariantId(),
+                            item.getProductVariant().getSkuVariant(),
+                            item.getProductVariant().getNetWeight(),
+                            item.getProductVariant().getUnit().name(),
+
+                            batchId,
+                            batchCode,
+                            expectedHarvestDate,
+
+                            item.getProductVariant().getTechnicalDetails(),
+                            item.getLabels() != null ? item.getLabels().size() : 0
+                    );
+                })
                 .toList();
 
         return new AdminOrderDetailDTO(

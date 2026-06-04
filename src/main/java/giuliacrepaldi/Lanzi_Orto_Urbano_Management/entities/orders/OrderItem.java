@@ -48,6 +48,7 @@ public class OrderItem {
     private Batch batch;
 
     @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("orderItem")
     private List<Label> labels = new ArrayList<>();
 
 }

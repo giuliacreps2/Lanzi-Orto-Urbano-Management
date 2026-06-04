@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record LabelDTO(
         String barCodeGs1,
-        Integer barcodeData,
+        String barcodeData,
         LocalDate productionDate,
         LocalDate bestBeforeDate,
         LocalDate exitDate,

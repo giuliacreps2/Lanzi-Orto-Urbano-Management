@@ -198,12 +198,20 @@ public class LabelsService {
             }
 
             for (int i = 0; i < foundItem.getQuantity(); i++) {
+                String generatedCode = this.labelCodeService.generateLabelCode(foundItem, i);
 
                 Label newLabel = Label.builder()
                         .orderItem(foundItem)
                         .batch(foundItem.getBatch())
                         .productVariant(foundItem.getProductVariant())
                         .barCodeGs1(this.labelCodeService.generateLabelCode(foundItem, i))
+                        .barcodeData(generatedCode)
+                        .bestBeforeDate(foundItem.getBatch() != null ? foundItem.getLabels().getFirst().getBestBeforeDate() : java.time.LocalDate.now().plusDays(14))
+
+                        .bestBeforeDate(java.time.LocalDate.now().plusDays(14)) // Scadenza fittizia
+                        .productionDate(java.time.LocalDate.now())             // Prodotto oggi
+                        .exitDate(java.time.LocalDate.now().plusDays(1))
+
                         .build();
 
                 Label savedLabel = this.labelsRepository.save(newLabel);
