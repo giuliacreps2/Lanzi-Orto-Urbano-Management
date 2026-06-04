@@ -1,5 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Label;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
@@ -35,6 +36,7 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
+    @JsonIgnoreProperties("items")
     private Order order;
 
     @ManyToOne
@@ -42,7 +44,7 @@ public class OrderItem {
     private ProductVariant productVariant;
 
     @ManyToOne
-    @JoinColumn(name = "batch_id", nullable = false)
+    @JoinColumn(name = "batch_id")
     private Batch batch;
 
     @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)

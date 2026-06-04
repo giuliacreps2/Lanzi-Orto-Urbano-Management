@@ -2,6 +2,7 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.orders;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProfile;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2cProfile;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
@@ -67,21 +68,21 @@ public class OrdersService {
 
     //CREATE
     @Transactional
-    public Order createOrderFromCart(CheckoutDTO body) {
+    public Order createOrderFromCart(User currentUser, CheckoutDTO body) {
 
         //PROFILO
         B2cProfile b2c = null;
         B2bProfile b2b = null;
         ClientCategory clientCategory;
 
-        if (body.b2cProfileId() != null) {
-            b2c = this.b2cProfilesService.findById(body.b2cProfileId());
+        if (currentUser.getB2cProfile() != null) {
+            b2c = currentUser.getB2cProfile();
             clientCategory = ClientCategory.B2C;
-        } else if (body.b2bProfileId() != null) {
-            b2b = this.b2bProfilesService.findById(body.b2bProfileId());
+        } else if (currentUser.getB2bProfile() != null) {
+            b2b = currentUser.getB2bProfile();
             clientCategory = ClientCategory.B2B;
         } else {
-            throw new BadRequestException("Invalid checkout request. You should be logged in");
+            throw new BadRequestException("Invalid checkout request. User profile not found");
         }
 
         Order order = Order.builder()
@@ -89,6 +90,7 @@ public class OrdersService {
                 .deliveryType(body.deliveryType())
                 .sourceOrder(SourceOrder.CUSTOMER_SELF)
                 .reorderedFormByAdmin(false)
+                .orderCreatedAt(LocalDateTime.now())
                 .totalAmount(BigDecimal.ZERO)
                 .loyaltyPointsUsed(body.loyaltyPointsUsed())
                 .b2cProfile(b2c)
@@ -206,7 +208,7 @@ public class OrdersService {
         }
 
         Order savedOrder = ordersRepository.save(order);
-        log.info("Your order has been saved successfully: {}", savedOrder);
+        log.info("Order saved successfully with id: {}", savedOrder.getOrderId());
         return savedOrder;
     }
 
@@ -264,8 +266,8 @@ public class OrdersService {
     }
 
     @Transactional
-    public void findByIdAndReorderByAdmin(UUID orderId, CheckoutDTO body) {
-        B2bProfile foundB2b = this.b2bProfilesService.findById(body.b2bProfileId());
+    public void findByIdAndReorderByAdmin(UUID orderId, User currentUser, CheckoutDTO body) {
+        B2bProfile foundB2b = currentUser.getB2bProfile();
         Order found = this.ordersRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
 
         if (!foundB2b.getAutoReorderEnabled()) throw new BadRequestException("Operation denied: you can't do reorder");
@@ -336,7 +338,7 @@ public class OrdersService {
     }
 
     @Transactional
-    public Order findByIdAndApplyLoyaltyDiscount(UUID orderId, CheckoutDTO body) {
+    public Order findByIdAndApplyLoyaltyDiscount(UUID orderId, User currentUser) {
         Order found = this.ordersRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
 
         if (found.getStatusOrder() != StatusOrder.PENDING)
@@ -345,11 +347,11 @@ public class OrdersService {
             throw new BadRequestException("Discount already applied");
 
         Long availablePoints = 0L;
-        if (body.b2cProfileId() != null) {
-            B2cProfile b2c = this.b2cProfilesService.findById(body.b2cProfileId());
+        if (currentUser.getB2cProfile() != null) {
+            B2cProfile b2c = currentUser.getB2cProfile();
             availablePoints = b2c.getLoyaltyPoints();
-        } else if (body.b2bProfileId() != null) {
-            B2bProfile b2b = this.b2bProfilesService.findById(body.b2bProfileId());
+        } else if (currentUser.getB2bProfile() != null) {
+            B2bProfile b2b = currentUser.getB2bProfile();
             availablePoints = b2b.getLoyaltyPoints();
         }
 
