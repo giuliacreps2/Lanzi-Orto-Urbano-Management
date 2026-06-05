@@ -65,7 +65,7 @@ La piattaforma integra un sistema di gestione magazzino basato su **etichette di
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    CLIENT LAYER                     │
-│           React / Next.js + Tailwind/Bootstrap      │
+│                Next.js + Tailwind                   │
 └─────────────────────┬───────────────────────────────┘
                       │ REST API (HTTPS)
 ┌─────────────────────▼───────────────────────────────┐
@@ -97,9 +97,17 @@ La piattaforma integra un sistema di gestione magazzino basato su **etichette di
 ### Frontend
 | Tecnologia | Utilizzo |
 |---|---|
-| React / Next.js | Framework UI |
-| Tailwind CSS / Bootstrap | Styling e componenti |
+| Next.js | Framework UI |
+| Tailwind CSS | Styling e componenti |
 
+---
+ 
+## 🔗 Links
+ 
+| | Link |
+|---|---|
+| 🖥️ Frontend Repository | [github.com/giuliacreps2/lanzi-orto-urbano-microgreens](https://github.com/giuliacreps2/lanzi-orto-urbano-microgreens) |
+ 
 ---
 
 ## 📡 API Endpoints
@@ -108,34 +116,31 @@ La piattaforma integra un sistema di gestione magazzino basato su **etichette di
 | Metodo | Endpoint | Descrizione |
 |---|---|---|
 | POST | `/api/auth/register` | Registrazione nuovo utente |
-| POST | `/api/auth/login` | Login e ottenimento JWT |
+| POST | `/auth/auth/login` | Login e ottenimento JWT |
+| POST | `/auth/register/b2c` | Registrazione nuovo utente B2C con mail di verifica |
+| POST | `/auth/verify/b2b?token=` | Registrazione nuovo utente B2B con verifica di P.IVA |
+| GET | `/auth/b2b/{userId}/approve` | ADMIN | Approvazione profilo utente B2B |
 
 ### Prodotti
 | Metodo | Endpoint | Descrizione |
 |---|---|---|
-| GET | `/api/prodotti` | Lista prodotti (pubblica) |
-| GET | `/api/prodotti/{id}` | Dettaglio prodotto con info lotto |
-| POST | `/api/admin/prodotti` | Crea prodotto (ADMIN) |
+| GET | `products` | Lista prodotti (pubblica) |
+| GET | `products/{productId}` | Dettaglio prodotto con info lotto |
+| POST | `products/new-composite` | ADMIN | Crea prodotto composto dalle variabili di prezzo e packaging |
 
 ### Ordini
 | Metodo | Endpoint | Descrizione |
 |---|---|---|
-| POST | `/api/ordini` | Crea nuovo ordine |
-| GET | `/api/ordini/miei` | Storico ordini utente |
-| POST | `/api/admin/ordini/riordino/{clienteId}` | Attiva riordino automatico B2B (ADMIN) |
+| POST | `/orders/checkout` | Authenticated | Crea nuovo ordine |
+| PATCH | `/orders/{orderId}/apply-loyalty` | ADMIN | Applica lo sconto punti sull'ordine |
+| POST | `/orders/{orderId}/admin-reorder/{userId}` | ADMIN | Attiva riordino automatico B2B (ADMIN) |
 
-### Punti
+### Etichette
 | Metodo | Endpoint | Descrizione |
 |---|---|---|
-| GET | `/api/punti/saldo` | Saldo punti utente |
-| GET | `/api/punti/storico` | Movimenti punti |
-
-### Etichette & Lotti
-| Metodo | Endpoint | Descrizione |
-|---|---|---|
-| POST | `/api/admin/lotti` | Crea nuovo lotto di semina (ADMIN) |
-| GET | `/api/admin/lotti` | Lista tutti i lotti (ADMIN) |
-| POST | `/api/admin/etichette/genera/{lottoId}` | Genera etichette per lotto (ADMIN) |
+| POST | `/labels/new-lab` | ADMIN | Crea una nuova etichetta manualmente |
+| GET | `/labels/order/{orderId}` | ADMIN | Lista di tutte le etichette per ordine |
+| POST | `/labels/order/{orderId}/generate` | ADMIN | Genera etichette per ordine |
 
 ---
 
@@ -145,11 +150,10 @@ Ogni ciclo di produzione genera un **lotto di semina** identificato da:
 
 | Campo | Descrizione |
 |---|---|
-| `numeroLotto` | Codice univoco del lotto (es. `MG-2024-001`) |
-| `dataSemina` | Data in cui i semi sono stati piantati |
-| `varietà` | Tipo di microgreen (es. Ravanello, Pisello, Basilico) |
-| `quantitàPrevista` | Quantità stimata a raccolto (g / vaschette) |
-| `dataRaccoltaPrevista` | Data stimata di raccolta |
+| `labelId` | Codice etichetta |
+| `barCodeGs1` |GS1-128 codice per la tracciabilità dei prodotti |
+| `Map<String, Object> metadataProdCategory` | Caratterstiche associate alla categoria |
+| `Map<String, Object> technicalDetails` | Caratteristiche associate alla variante di prodotto |
 
 Le etichette generate da ogni lotto vengono associate agli ordini in uscita. Quando un'etichetta viene registrata come "spedita":
 1. Il magazzino si aggiorna automaticamente (scalando la quantità disponibile)
@@ -228,7 +232,7 @@ The platform integrates a **batch label-based warehouse management system**, ena
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    CLIENT LAYER                     │
-│           React / Next.js + Tailwind/Bootstrap      │
+│                Next.js + Tailwind                   │
 └─────────────────────┬───────────────────────────────┘
                       │ REST API (HTTPS)
 ┌─────────────────────▼───────────────────────────────┐
@@ -260,9 +264,17 @@ The platform integrates a **batch label-based warehouse management system**, ena
 ### Frontend
 | Technology | Usage |
 |---|---|
-| React / Next.js | UI Framework |
-| Tailwind CSS / Bootstrap | Styling and components |
+| Next.js | UI Framework |
+| Tailwind CSSì | Styling and components |
 
+---
+ 
+## 🔗 Links
+ 
+| | Link |
+|---|---|
+| 🖥️ Frontend Repository | [github.com/giuliacreps2/lanzi-orto-urbano-microgreens](https://github.com/giuliacreps2/lanzi-orto-urbano-microgreens) |
+ 
 ---
 
 ## 📡 API Endpoints
@@ -270,35 +282,34 @@ The platform integrates a **batch label-based warehouse management system**, ena
 ### Authentication
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login and get JWT |
+| POST | `/auth/register` | Register new user |
+| POST | `/auth/login` | Login and get JWT |
+| POST | `/auth/register/b2c` | Register new B2C user (sends verification email) |
+| POST | `/auth/register/b2b` | Public | Register new B2B profile (sends verification email) |
+| POST | `/auth/verify/b2b?token=` | Verify B2B VAT number and submit for admin approval |
+| GET | `/auth/b2b/{userId}/approve` | ADMIN | Approve B2B profile |
+
 
 ### Products
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/prodotti` | Product list (public) |
-| GET | `/api/prodotti/{id}` | Product detail with batch info |
-| POST | `/api/admin/prodotti` | Create product (ADMIN) |
+| GET | `products` | Product list (public) |
+| GET | `products/{productId}` | Product detail with batch info |
+| POST | `products/new-composite` | ADMIN | Create a product composed of price and packaging variables |
 
 ### Orders
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/ordini` | Create new order |
-| GET | `/api/ordini/miei` | User order history |
-| POST | `/api/admin/ordini/riordino/{clienteId}` | Trigger B2B automatic reorder (ADMIN) |
+| POST | `/orders/checkout` | Authenticated | Create new order from cart |
+| PATCH | `/orders/{orderId}/apply-loyalty` | ADMIN | Apply loyalty discount to an order |
+| POST | `/orders/{orderId}/admin-reorder/{userId}` | ADMIN | Reorder on behalf of a B2B client |
 
-### Points
+### Labels
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/punti/saldo` | User points balance |
-| GET | `/api/punti/storico` | Points movement history |
-
-### Labels & Batches
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/admin/lotti` | Create new sowing batch (ADMIN) |
-| GET | `/api/admin/lotti` | List all batches (ADMIN) |
-| POST | `/api/admin/etichette/genera/{lottoId}` | Generate labels for batch (ADMIN) |
+| POST | `/labels/new-lab` | ADMIN | Create a new label manually |
+| GET | `/labels/order/{orderId}` | ADMIN | Generate labels for an order |
+| POST | `/labels/order/{orderId}/generate` | ADMIN | Get barcode image (PNG, GS1-128) for label |
 
 ---
 
@@ -308,11 +319,10 @@ Each production cycle generates a **sowing batch** identified by:
 
 | Field | Description |
 |---|---|
-| `batchNumber` | Unique batch code (e.g. `MG-2024-001`) |
-| `sowingDate` | Date the seeds were planted |
-| `variety` | Microgreen type (e.g. Radish, Pea, Basil) |
-| `expectedQuantity` | Estimated harvest quantity (g / trays) |
-| `expectedHarvestDate` | Estimated harvest date |
+| `labelId` | Unique label code |
+| `barCodeGs1` | GS1-128 code for product traceability  |
+| `Map<String, Object> metadataProdCategory` | Characteristics associated with the category |
+| `Map<String, Object> technicalDetails` | Features associated with the product variant |
 
 Labels generated from each batch are linked to outgoing orders. When a label is registered as "shipped":
 1. The warehouse updates automatically (reducing available quantity)
