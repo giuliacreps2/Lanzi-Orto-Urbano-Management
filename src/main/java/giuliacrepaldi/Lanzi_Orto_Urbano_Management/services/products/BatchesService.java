@@ -2,6 +2,7 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.StatusBatch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.BatchDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.BatchesRepository;
@@ -12,6 +13,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Year;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -32,15 +38,67 @@ public class BatchesService {
 
         ProductVariant variant = this.productVariantsService.findById(body.productVariantId());
 
+        String category = "generic";
+        if (variant.getProduct() != null && variant.getProduct().getProductCategory() != null) {
+            category = variant.getProduct().getProductCategory().toString();
+        }
+
+        String generatedCode = body.batchCode();
+        LocalDate expectedHarvest = body.expectedHarvestDate();
+        int currentYear = Year.now().getValue();
+
+        Map<String, Object> metadata = body.batchMetadata() != null ? body.batchMetadata() : new HashMap<>();
+
+        switch (category) {
+            case "microgreens":
+            case "funghi":
+                String supplierCode = metadata.getOrDefault("supplier_batch_code", "GENERIC-SUP").toString();
+                String productSku = variant.getSkuVariant() != null ? variant.getSkuVariant() : "PROD";
+                generatedCode = "LOT-" + productSku + "-" + supplierCode;
+
+                if (expectedHarvest == null) {
+                    LocalDate start = body.startedAt() != null ? body.startedAt().toLocalDate() : LocalDate.now();
+                    expectedHarvest = start.plusDays(10);
+                }
+                break;
+            case "miele":
+                Object hiveId = metadata.getOrDefault("hive_id", "01");
+                generatedCode = "ARN-" + hiveId + "-" + currentYear;
+
+                if (expectedHarvest == null) {
+                    expectedHarvest = LocalDate.now();
+                }
+                break;
+            case "zafferano":
+                String bulbCode = metadata.getOrDefault("bulb_code", "BULB-ZAF").toString();
+                generatedCode = "ZAF-" + bulbCode + "-" + currentYear;
+
+                if (expectedHarvest == null) {
+                    expectedHarvest = LocalDate.now().plusMonths(4);
+                }
+                break;
+
+            default:
+
+                if (generatedCode == null || generatedCode.isEmpty()) {
+                    generatedCode = "LOT-" + currentYear + "-" + UUID.randomUUID().toString().substring(0, 5).toUpperCase();
+                }
+                if (expectedHarvest == null) {
+                    expectedHarvest = LocalDate.now().plusDays(7);
+                }
+                break;
+        }
+
         Batch newBatch = Batch.builder()
-                .batchCode(body.batchCode())
-                .statusBatch(body.statusBatch())
+                .batchCode(generatedCode)
+                .statusBatch(body.statusBatch() != null ? body.statusBatch() : StatusBatch.INCUBATION)
+                .batchCreatedAt(LocalDateTime.now())
                 .quantityPlanned(body.quantityPlanned())
                 .quantityActual(body.quantityActual())
-                .startedAt(body.startedAt())
-                .expectedHarvestDate(body.expectedHarvestDate())
+                .startedAt(body.startedAt() != null ? body.startedAt() : LocalDateTime.now())
+                .expectedHarvestDate(expectedHarvest)
                 .actualHarvestDate(body.actualHarvestDate())
-                .batchMetadata(body.batchMetadata())
+                .batchMetadata(metadata)
                 .productVariant(variant)
                 .build();
 

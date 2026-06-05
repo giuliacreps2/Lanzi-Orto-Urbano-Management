@@ -64,8 +64,7 @@ public class LabelsService {
 
         Label newLabel = Label.builder()
                 .barCodeGs1(generatedGs1Code)
-                .barCodeGs1(body.barCodeGs1())
-                .barcodeData(body.barcodeData())
+                .barcodeData(generatedGs1Code)
                 .productionDate(body.productionDate())
                 .bestBeforeDate(body.bestBeforeDate())
                 .exitDate(body.exitDate())
@@ -76,17 +75,28 @@ public class LabelsService {
                 .build();
 
         Label savedLabel = labelsRepository.save(newLabel);
-        log.info("Label saved successfully, {}", savedLabel);
+        log.info("Label saved successfully whit GS1 code, {}", savedLabel);
 
         return savedLabel;
     }
 
-    private String generateGs1String(String skuVariant, LocalDate prodDate, String batchCode) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        String dateString = prodDate.format(formatter);
+//    private String generateGs1String(String skuVariant, LocalDate prodDate, String batchCode) {
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//        String dateString = prodDate.format(formatter);
+//
+//        //COSTRUZIONE STRINGA: 01 = SKU, 11 = DATA PROD, 10 = LOTTO
+//        return "01" + skuVariant + "11" + dateString + "10" + batchCode;
+//    }
 
-        //COSTRUZIONE STRINGA: 01 = SKU, 11 = DATA PROD, 10 = LOTTO
-        return "01" + skuVariant + "11" + dateString + "10" + batchCode;
+    private String generateGs1String(String skuVariant, LocalDate productionDate, String batchCode) {
+        String italyCode = "80";
+
+        String numericSku = String.format("%011d", Math.abs((skuVariant != null ? skuVariant : "PROD").hashCode() % 100000000L));
+        String gtin13 = italyCode + numericSku;
+
+        String formattedDate = productionDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        return "01" + "0" + gtin13 + "11" + formattedDate + "10" + (batchCode != null ? batchCode : "");
     }
 
     //REQUESTS
@@ -182,13 +192,11 @@ public class LabelsService {
         }
 
         List<OrderItem> foundItems = this.orderItemsService.findAllByOrderId(orderId);
-
         if (foundItems.isEmpty()) throw new BadRequestException("Cannot generate labels: order has no items");
 
         List<Label> generatedLabels = new ArrayList<>();
 
         for (OrderItem foundItem : foundItems) {
-
             boolean labelsAlreadyExist = this.labelsRepository.existsByOrderItem_OrderItemId(
                     foundItem.getOrderItemId()
             );
@@ -197,21 +205,25 @@ public class LabelsService {
                 continue;
             }
 
+            Batch associatedBatch = foundItem.getBatch();
+            String batchCode = (associatedBatch.getBatchCode() != null) ? associatedBatch.getBatchCode() : "LOT-DEMO";
+
+            LocalDate production = LocalDate.now();
+            LocalDate bestBefore = (associatedBatch != null && associatedBatch.getExpectedHarvestDate() != null) ? associatedBatch.getExpectedHarvestDate().plusDays(7) : production.plusDays(14);
+
             for (int i = 0; i < foundItem.getQuantity(); i++) {
-                String generatedCode = this.labelCodeService.generateLabelCode(foundItem, i);
+                String generatedGS1Code = this.labelCodeService.generateLabelCode(foundItem, i);
 
                 Label newLabel = Label.builder()
                         .orderItem(foundItem)
                         .batch(foundItem.getBatch())
                         .productVariant(foundItem.getProductVariant())
-                        .barCodeGs1(this.labelCodeService.generateLabelCode(foundItem, i))
-                        .barcodeData(generatedCode)
-                        .bestBeforeDate(foundItem.getBatch() != null ? foundItem.getLabels().getFirst().getBestBeforeDate() : java.time.LocalDate.now().plusDays(14))
-
-                        .bestBeforeDate(java.time.LocalDate.now().plusDays(14)) // Scadenza fittizia
-                        .productionDate(java.time.LocalDate.now())             // Prodotto oggi
-                        .exitDate(java.time.LocalDate.now().plusDays(1))
-
+                        .barCodeGs1(generatedGS1Code)
+                        .barcodeData(generatedGS1Code)
+                        .productionDate(production)
+                        .bestBeforeDate(bestBefore)
+                        .exitDate(production.plusDays(1))
+                        .inventoryDecremented(false)
                         .build();
 
                 Label savedLabel = this.labelsRepository.save(newLabel);
