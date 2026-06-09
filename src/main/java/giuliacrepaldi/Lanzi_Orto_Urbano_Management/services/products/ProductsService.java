@@ -6,13 +6,8 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.ProductStatus;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductCatalogDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductFormDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.PriceListsRepository;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductCategoryAttributesRepository;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductVariantsRepository;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductsRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.*;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.UsersService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,8 +36,9 @@ public class ProductsService {
     private final PriceListsRepository priceListsRepository;
     private final PackagingTypesService packagingTypesService;
     private final UsersService usersService;
+    private final ProductImagesRepository productImagesRepository;
 
-    public ProductsService(ProductsRepository productsRepository, ProductCategoryAttributesRepository productCategoryAttributesRepository, ProductCategoriesService productCategoriesService, ProductVariantsRepository productVariantsRepository, PriceListsRepository priceListsRepository, PackagingTypesService packagingTypesService, UsersService usersService) {
+    public ProductsService(ProductsRepository productsRepository, ProductCategoryAttributesRepository productCategoryAttributesRepository, ProductCategoriesService productCategoriesService, ProductVariantsRepository productVariantsRepository, PriceListsRepository priceListsRepository, PackagingTypesService packagingTypesService, UsersService usersService, ProductImagesRepository productImagesRepository) {
         this.productsRepository = productsRepository;
         this.productCategoryAttributesRepository = productCategoryAttributesRepository;
         this.productCategoriesService = productCategoriesService;
@@ -49,6 +46,7 @@ public class ProductsService {
         this.priceListsRepository = priceListsRepository;
         this.packagingTypesService = packagingTypesService;
         this.usersService = usersService;
+        this.productImagesRepository = productImagesRepository;
     }
 
     //CREATE
@@ -98,6 +96,39 @@ public class ProductsService {
 
         Product savedProduct = productsRepository.save(newProduct);
 
+        if (body.images() != null && !body.images().isEmpty()) {
+            List<ProductImage> images = body.images().stream()
+                    .map(imgDTO -> {
+                        ProductImage img = ProductImage.builder()
+                                .urlImage(imgDTO.urlImage())
+                                .altText(imgDTO.altText())
+                                .sortOrder(imgDTO.sortOrder() != null ? imgDTO.sortOrder() : 0)
+                                .isPrimary(imgDTO.isPrimary())
+                                .cloudinaryPublicId(imgDTO.cloudinaryPublicId())
+                                .product(savedProduct)
+                                .build();
+                        return img;
+                    }).toList();
+            productImagesRepository.saveAll(images);
+            log.info("PRODUCT IMAGES: {} per {}", images.size(), savedProduct.getProductName());
+        }
+
+        Map<String, Object> techDetails = new HashMap<>();
+
+        if (body.technicalDetails() != null && !body.technicalDetails().isEmpty()) {
+            techDetails.putAll(body.technicalDetails());
+        }
+
+        if (body.tasteNotes() != null) techDetails.put("taste_notes", body.tasteNotes());
+        if (body.intensity() != null) techDetails.put("intensity", body.intensity());
+        if (body.storage() != null) techDetails.put("storage", body.storage());
+        if (body.shelfLifeDays() != null) techDetails.put("shelf_life_days", body.shelfLifeDays());
+        if (body.pairings() != null) techDetails.put("pairings", body.pairings());
+        if (body.pairingImage() != null) techDetails.put("pairing_image", body.pairingImage());
+        if (body.certifications() != null) techDetails.put("certifications", body.certifications());
+        if (body.expectedHarvest() != null) techDetails.put("expected_harvest", body.expectedHarvest().toString());
+
+
         PackagingType packType = this.packagingTypesService.findById(body.packTypeId());
 
         ProductVariant newProdVar = ProductVariant.builder()
@@ -105,7 +136,7 @@ public class ProductsService {
                 .activeVariant(body.activeVariant())
                 .netWeight(body.netWeight())
                 .unit(body.unit())
-                .technicalDetails(body.technicalDetails())
+                .technicalDetails(techDetails)
                 .product(savedProduct)
                 .packagingType(packType)
                 .build();
@@ -209,7 +240,7 @@ public class ProductsService {
                             product.getShortProductDescription(),
                             variant.getSkuVariant(),
                             safeNetWeight,
-                            variant.getUnit().toString(),
+                            variant.getUnit(),
                             priceList.getPrice(),
                             clientCategory,
                             priceLabel,
@@ -236,6 +267,36 @@ public class ProductsService {
         return this.getCatalogForUser(currentUser);
     }
 
+
+    public List<ProductCatalogDTO> getRelatedProducts(String slug, Authentication authentication) {
+
+        Product currentProduct = this.productsRepository.findByProductSlug(slug).orElseThrow(() -> new NotFoundException("Product not found"));
+
+        UUID currentCategoryId = currentProduct.getProductCategory() != null ? currentProduct.getProductCategory().getProductCategoryId() : null;
+
+        User currentUser = null;
+
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && !authentication.getPrincipal().equals("anonymousUser")) {
+            currentUser = this.usersService.findByEmail(authentication.getName());
+        }
+
+        List<ProductCatalogDTO> catalog = getCatalogForUser(currentUser);
+
+        return catalog.stream()
+                .filter(p -> !p.productSlug().equals(slug))
+                .filter(p -> {
+                    if (currentCategoryId != null) return true;
+
+                    Product prod = this.productsRepository.findByProductSlug(p.productSlug()).orElse(null);
+                    if (prod == null || prod.getProductCategory() == null) return false;
+                    return prod.getProductCategory().getProductCategoryId().equals(currentCategoryId);
+                })
+                .limit(3)
+                .toList();
+
+    }
 
     //UPDATE
 
@@ -278,6 +339,23 @@ public class ProductsService {
 
         Product savedProduct = this.productsRepository.save(product);
 
+        productImagesRepository.deleteByProduct_ProductId(productId);
+
+        if (body.images() != null && !body.images().isEmpty()) {
+            List<ProductImage> updatedImages = body.images().stream().map(imgDTO -> {
+                ProductImage img = ProductImage.builder()
+                        .urlImage(imgDTO.urlImage())
+                        .altText(imgDTO.altText())
+                        .sortOrder(imgDTO.sortOrder() != null ? imgDTO.sortOrder() : 0)
+                        .isPrimary(imgDTO.isPrimary())
+                        .cloudinaryPublicId(imgDTO.cloudinaryPublicId())
+                        .product(savedProduct)
+                        .build();
+                return img;
+            }).toList();
+            productImagesRepository.saveAll(updatedImages);
+        }
+
         ProductVariant variant = this.productVariantsRepository.findByProductProductId(productId)
                 .orElseThrow(() -> new NotFoundException("Product Variant not found"));
 
@@ -287,8 +365,23 @@ public class ProductsService {
         variant.setActiveVariant(body.activeVariant());
         variant.setNetWeight(body.netWeight());
         variant.setUnit(body.unit());
-        variant.setTechnicalDetails(body.technicalDetails());
         variant.setPackagingType(packagingType);
+
+        Map<String, Object> currentTechDetails = variant.getTechnicalDetails();
+        if (currentTechDetails == null) {
+            currentTechDetails = new HashMap<>();
+        }
+
+        if (body.tasteNotes() != null) currentTechDetails.put("taste_notes", body.tasteNotes());
+        if (body.intensity() != null) currentTechDetails.put("intensity", body.intensity());
+        if (body.storage() != null) currentTechDetails.put("storage", body.storage());
+        if (body.shelfLifeDays() != null) currentTechDetails.put("shelf_life_days", body.shelfLifeDays());
+        if (body.pairings() != null) currentTechDetails.put("pairings", body.pairings());
+        if (body.pairingImage() != null) currentTechDetails.put("pairing_image", body.pairingImage());
+        if (body.certifications() != null) currentTechDetails.put("certifications", body.certifications());
+        if (body.expectedHarvest() != null)
+            currentTechDetails.put("expected_harvest", body.expectedHarvest().toString());
+        variant.setTechnicalDetails(currentTechDetails);
 
         ProductVariant savedVariant = this.productVariantsRepository.save(variant);
 
@@ -349,6 +442,48 @@ public class ProductsService {
 //            }
 //        }
 //    }
+
+    //GET PER SLUG
+    @Transactional(readOnly = true)
+    public ProductDetailDTO getProductDetailBySlug(String slug) {
+
+        Product product = this.productsRepository.findByProductSlug(slug).orElseThrow(() -> new NotFoundException("Product Slug not found"));
+
+        List<ProductVariant> variants = this.productVariantsRepository.findAllByProductProductId(product.getProductId());
+
+        List<VariantInfoDTO> variantDTOs = variants.stream().map(variant -> {
+            List<PriceList> priceLists = this.priceListsRepository
+                    .findByProductVariantId(variant.getVariantId());
+
+            List<PriceInfoDTO> priceInfos = priceLists.stream()
+                    .map(p -> new PriceInfoDTO(p.getPrice(), p.getMinOrderQuantity(), p.getClientCategory()))
+                    .toList();
+
+            return new VariantInfoDTO(
+                    variant.getVariantId(),
+                    variant.getSkuVariant(),
+                    variant.getNetWeight() != null ? variant.getNetWeight() : 0.0,
+                    variant.getUnit(),
+                    variant.getTechnicalDetails(),
+                    variant.getPackagingType() != null ? variant.getPackagingType().getPackTypeId() : null,
+                    variant.getPackagingType() != null ? variant.getPackagingType().getNamePackType() : null,
+                    variant.getPackagingType() != null ? variant.getPackagingType().getUnitOfMeasure() : null,
+                    priceInfos
+            );
+        }).toList();
+
+        ProductInfoDTO productInfoDTO = new ProductInfoDTO(
+                product.getProductId(),
+                product.getProductName(),
+                product.getProductSlug(),
+                product.getProductDescription(),
+                product.getShortProductDescription(),
+                product.isProductIsAvailable(),
+                product.getProductCategory() != null ? product.getProductCategory().getNameProdCategory() : null
+        );
+
+        return new ProductDetailDTO(productInfoDTO, variantDTOs);
+    }
 
 
     //SOFT DELETE

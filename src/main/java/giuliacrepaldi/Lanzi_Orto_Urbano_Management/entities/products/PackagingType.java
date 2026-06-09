@@ -1,13 +1,15 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products;
 
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.PackagingCategory;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -40,7 +42,7 @@ public class PackagingType {
     private PackagingCategory packagingCategory;
 
 
-    @OneToOne(mappedBy = "packagingType")
-    @JsonManagedReference
-    private ProductVariant productVariant;
+    @JsonIgnore
+    @OneToMany(mappedBy = "packagingType", cascade = CascadeType.ALL)
+    private List<ProductVariant> productVariants = new ArrayList<>();
 }

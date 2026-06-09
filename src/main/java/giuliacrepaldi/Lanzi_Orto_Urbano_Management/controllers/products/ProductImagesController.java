@@ -27,17 +27,12 @@ public class ProductImagesController {
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductImage createProductImage(@RequestPart("file") MultipartFile file,
-                                           @RequestPart("productId") String productId,
+                                           @RequestPart("productId") UUID productId,
                                            @RequestPart(value = "altText", required = false) String altText,
-                                           @RequestPart(value = "sortOrder", required = false) String sortOrder,
-                                           @RequestPart(value = "isPrimary", required = false) String isPrimary) {
+                                           @RequestPart(value = "sortOrder", required = false) Integer sortOrder,
+                                           @RequestPart(value = "isPrimary", required = false) boolean isPrimary) {
 
-        UUID productImageId = UUID.fromString(productId);
-        String alt = altText != null ? altText : "";
-        Integer order = sortOrder != null ? Integer.parseInt(sortOrder) : 0;
-        boolean primary = isPrimary != null ? Boolean.parseBoolean(isPrimary) : false;
-
-        return this.productImagesServices.saveImage(file, productImageId, alt, order, primary);
+        return this.productImagesServices.saveImage(file, productId, altText, sortOrder, isPrimary);
     }
 
 

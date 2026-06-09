@@ -24,7 +24,7 @@ public enum Unit {
     //UNITà CONFEZIONAMENTO
     PIECE("pz", "Pezzo singolo", false),
     PACK("conf", "Confezione / Pacchetto", false),
-    PORTTION("porz", "Porzione", false),
+    PORTION("porz", "Porzione", false),
     TRAY("vasc", "Vaschetta", false),
     JAR("vas", "Vasetto", false);
 

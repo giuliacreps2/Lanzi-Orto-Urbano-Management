@@ -41,7 +41,21 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/municipalities/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/products/catalog").permitAll()
+                .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
+
+                .requestMatchers(HttpMethod.GET, "/product-categories/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/product-category-attributes/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/packaging/**").hasAuthority("ADMIN")
+
+                .requestMatchers(HttpMethod.GET, "/orders/my").authenticated()
+                .requestMatchers(HttpMethod.GET, "/b2b/me").authenticated()
+                .requestMatchers(HttpMethod.GET, "/orders/my").authenticated()
+
                 .requestMatchers(HttpMethod.POST, "/products/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/packaging/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/packaging/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/packaging/**").hasAuthority("ADMIN")
+
                 .requestMatchers(HttpMethod.GET, "/labels/*/label").permitAll()
                 .requestMatchers("/api/import/**").hasAuthority("ADMIN")
                 .requestMatchers("/roles/**").hasAuthority("ADMIN")

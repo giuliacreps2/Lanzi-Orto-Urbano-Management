@@ -4,10 +4,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Order;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusOrder;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.AdminOrderCustomerDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.AdminOrderDetailDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.AdminOrderItemDTO;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.CheckoutDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.orders.OrdersService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -145,6 +142,12 @@ public class OrdersController {
         return new AdminOrderCustomerDTO("B2C", "Cliente Ospite", null, null, null, null);
     }
 
+    @GetMapping("/my")
+    @ResponseStatus(HttpStatus.OK)
+    public List<OrderSummaryDTO> getMyOrders(@AuthenticationPrincipal User currentUser) {
+        return this.ordersService.findByUser(currentUser);
+    }
+    
 
     @GetMapping("/{orderId}")
     @PreAuthorize("hasAuthority('ADMIN')")

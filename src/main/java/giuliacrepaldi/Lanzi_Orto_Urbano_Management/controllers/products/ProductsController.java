@@ -4,6 +4,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Product;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductCatalogDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductDetailDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.ProductFormDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductsService;
 import org.springframework.data.domain.Page;
@@ -73,6 +74,24 @@ public class ProductsController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PatchMapping("/new-composite")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<Product> updateCompositeProduct(
+            @PathVariable UUID productId,
+            @RequestBody @Validated ProductFormDTO body,
+            BindingResult validation
+    ) {
+        if (validation.hasErrors()) {
+            List<String> errors = validation.getFieldErrors()
+                    .stream().map(FieldError::getDefaultMessage).toList();
+            throw new ValidationException(errors);
+        }
+        Product updated = this.productsService.updateCompositeProduct(productId, body);
+        return ResponseEntity.status(HttpStatus.OK).body(updated);
+
+    }
+
     //GET
     @GetMapping("/{productId}")
     public Product findById(@PathVariable UUID productId) {
@@ -128,20 +147,33 @@ public class ProductsController {
 //        return this.productsService.updateCompositeProduct(productId, body);
 //    }
 
-    @PutMapping("/composite/{productId}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Product> updateCompositeProduct(@PathVariable UUID productId,
-                                                          @RequestBody @Validated ProductFormDTO body,
-                                                          BindingResult validation) {
+//    @PutMapping("/composite/{productId}")
+//    @PreAuthorize("hasAuthority('ADMIN')")
+//    public ResponseEntity<Product> updateCompositeProduct(@PathVariable UUID productId,
+//                                                          @RequestBody @Validated ProductFormDTO body,
+//                                                          BindingResult validation) {
+//
+//        if (validation.hasErrors()) {
+//            List<String> errors = validation.getFieldErrors()
+//                    .stream().map(FieldError::getDefaultMessage).toList();
+//            throw new ValidationException(errors);
+//        }
+//
+//        Product updated = this.productsService.updateCompositeProduct(productId, body);
+//        return ResponseEntity.ok(updated);
+//    }
 
-        if (validation.hasErrors()) {
-            List<String> errors = validation.getFieldErrors()
-                    .stream().map(FieldError::getDefaultMessage).toList();
-            throw new ValidationException(errors);
-        }
+    @GetMapping("/{slug}/detail")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<ProductDetailDTO> getProductDetail(@PathVariable String slug) {
+        ProductDetailDTO detail = this.productsService.getProductDetailBySlug(slug);
+        return ResponseEntity.ok(detail);
+    }
 
-        Product updated = this.productsService.updateCompositeProduct(productId, body);
-        return ResponseEntity.ok(updated);
+    @GetMapping("/{slug}/related")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<List<ProductCatalogDTO>> getRelatedProducts(@PathVariable String slug, Authentication authentication) {
+        return ResponseEntity.ok(this.productsService.getRelatedProducts(slug, authentication));
     }
 
 

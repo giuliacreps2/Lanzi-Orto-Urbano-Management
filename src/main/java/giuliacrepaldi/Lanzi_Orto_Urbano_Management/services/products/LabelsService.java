@@ -4,7 +4,6 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Order;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.OrderItem;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Label;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusOrder;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
@@ -53,32 +52,32 @@ public class LabelsService {
 
 
     //CREATE
-    @Transactional
-    public Label saveNewLabel(LabelDTO body) {
-
-        Batch batch = this.batchesService.findById(body.batchId());
-        ProductVariant productVariant = this.productVariantsService.findById(body.productVariantId());
-
-        //AUTOMAZIONE GS1
-        String generatedGs1Code = generateGs1String(productVariant.getSkuVariant(), body.productionDate(), batch.getBatchCode());
-
-        Label newLabel = Label.builder()
-                .barCodeGs1(generatedGs1Code)
-                .barcodeData(generatedGs1Code)
-                .productionDate(body.productionDate())
-                .bestBeforeDate(body.bestBeforeDate())
-                .exitDate(body.exitDate())
-                .printedAt(body.printedAt())
-                .inventoryDecremented(false)
-                .batch(batch)
-                .productVariant(productVariant)
-                .build();
-
-        Label savedLabel = labelsRepository.save(newLabel);
-        log.info("Label saved successfully whit GS1 code, {}", savedLabel);
-
-        return savedLabel;
-    }
+//    @Transactional
+//    public Label saveNewLabel(LabelDTO body) {
+//
+//        Batch batch = this.batchesService.findById(body.batchId());
+//        ProductVariant productVariant = this.productVariantsService.findById(body.productVariantId());
+//
+//        //AUTOMAZIONE GS1
+//        String generatedGs1Code = generateGs1String(productVariant.getSkuVariant(), body.productionDate(), batch.getBatchCode());
+//
+//        Label newLabel = Label.builder()
+//                .barCodeGs1(generatedGs1Code)
+//                .barcodeData(generatedGs1Code)
+//                .productionDate(body.productionDate())
+//                .bestBeforeDate(body.bestBeforeDate())
+//                .exitDate(body.exitDate())
+//                .printedAt(body.printedAt())
+//                .inventoryDecremented(false)
+//                .batch(batch)
+//                .productVariant(productVariant)
+//                .build();
+//
+//        Label savedLabel = labelsRepository.save(newLabel);
+//        log.info("Label saved successfully whit GS1 code, {}", savedLabel);
+//
+//        return savedLabel;
+//    }
 
 //    private String generateGs1String(String skuVariant, LocalDate prodDate, String batchCode) {
 //        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -117,33 +116,33 @@ public class LabelsService {
 
     //UPDATE
 
-    public Label findByIdAndUpdateLabel(UUID labelId, LabelDTO body) {
-        if (!labelsRepository.existsById(labelId)) throw new NotFoundException("Label not found");
-
-        Label found = this.findById(labelId);
-
-        if (!found.getBatch().getBatchId().equals(body.batchId())) {
-            found.setBatch(batchesService.findById(body.batchId()));
-        }
-
-        if (!found.getProductVariant().getVariantId().equals(body.productVariantId())) {
-            found.setProductVariant(productVariantsService.findById(body.productVariantId()));
-        }
-
-        found.setBarcodeData(body.barcodeData());
-        found.setProductionDate(body.productionDate());
-        found.setBestBeforeDate(body.bestBeforeDate());
-        found.setExitDate(body.exitDate());
-        found.setPrintedAt(body.printedAt());
-        found.setInventoryDecremented(body.inventoryDecremented());
-
-        //RICALCOLO CODICE, SE CAMVìBIANO I DATI
-        found.setBarCodeGs1(generateGs1String(found.getProductVariant().getSkuVariant(), found.getProductionDate(), found.getBatch().getBatchCode()));
-
-        Label updated = this.labelsRepository.save(found);
-        log.info("Label updated successfully, {}", updated);
-        return updated;
-    }
+//    public Label findByIdAndUpdateLabel(UUID labelId, LabelDTO body) {
+//        if (!labelsRepository.existsById(labelId)) throw new NotFoundException("Label not found");
+//
+//        Label found = this.findById(labelId);
+//
+//        if (!found.getBatch().getBatchId().equals(body.batchId())) {
+//            found.setBatch(batchesService.findById(body.batchId()));
+//        }
+//
+//        if (!found.getProductVariant().getVariantId().equals(body.productVariantId())) {
+//            found.setProductVariant(productVariantsService.findById(body.productVariantId()));
+//        }
+//
+//        found.setBarcodeData(body.barcodeData());
+//        found.setProductionDate(body.productionDate());
+//        found.setBestBeforeDate(body.bestBeforeDate());
+//        found.setExitDate(body.exitDate());
+//        found.setPrintedAt(body.printedAt());
+//        found.setInventoryDecremented(body.inventoryDecremented());
+//
+//        //RICALCOLO CODICE, SE CAMVìBIANO I DATI
+//        found.setBarCodeGs1(generateGs1String(found.getProductVariant().getSkuVariant(), found.getProductionDate(), found.getBatch().getBatchCode()));
+//
+//        Label updated = this.labelsRepository.save(found);
+//        log.info("Label updated successfully, {}", updated);
+//        return updated;
+//    }
 
 
     //DELETE
@@ -184,7 +183,7 @@ public class LabelsService {
 
     //GENERAZIONE ETICHETTE DALL'ORDINE
     @Transactional
-    public List<Label> generateLabelFromOrderId(UUID orderId) {
+    public List<LabelDTO> generateLabelFromOrderId(UUID orderId) {
         Order foundOrder = this.ordersService.startProcessingOrder(orderId);
 
         if (foundOrder.getStatusOrder() == StatusOrder.CANCELLED) {
@@ -206,10 +205,14 @@ public class LabelsService {
             }
 
             Batch associatedBatch = foundItem.getBatch();
-            String batchCode = (associatedBatch.getBatchCode() != null) ? associatedBatch.getBatchCode() : "LOT-DEMO";
+            String batchCode = (associatedBatch != null && associatedBatch.getBatchCode() != null)
+                    ? associatedBatch.getBatchCode()
+                    : "LOT-DEMO";
 
             LocalDate production = LocalDate.now();
-            LocalDate bestBefore = (associatedBatch != null && associatedBatch.getExpectedHarvestDate() != null) ? associatedBatch.getExpectedHarvestDate().plusDays(7) : production.plusDays(14);
+            LocalDate bestBefore = (associatedBatch != null && associatedBatch.getExpectedHarvestDate() != null)
+                    ? associatedBatch.getExpectedHarvestDate().plusDays(7)
+                    : production.plusDays(14);
 
             for (int i = 0; i < foundItem.getQuantity(); i++) {
                 String generatedGS1Code = this.labelCodeService.generateLabelCode(foundItem, i);
@@ -231,11 +234,55 @@ public class LabelsService {
             }
         }
 
-        if (generatedLabels.isEmpty()) {
-            return this.labelsRepository.findByOrderItem_Order_OrderId(foundOrder.getOrderId());
+        // Se le label esistevano già, le recupera dal DB
+        List<Label> finalLabels = generatedLabels.isEmpty()
+                ? this.labelsRepository.findByOrderItem_Order_OrderId(foundOrder.getOrderId())
+                : generatedLabels;
+
+        return finalLabels.stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    private LabelDTO toDTO(Label label) {
+        String productName = null;
+        if (label.getProductVariant() != null && label.getProductVariant().getProduct() != null) {
+            productName = label.getProductVariant().getProduct().getProductName();
         }
 
-        return generatedLabels;
+        String batchCode = null;
+        if (label.getBatch() != null) {
+            batchCode = label.getBatch().getBatchCode();
+        }
 
+        // EAN-13 generato dall'orderItem e dall'indice ricavato dal barcodeData
+        String eanCode = null;
+        if (label.getOrderItem() != null) {
+            // Ricaviamo l'indice dall'ultimo segmento del barcodeData (es. "IT-xxx-yyy-3" → 2)
+            String barcodeData = label.getBarcodeData();
+            int itemIndex = 0;
+            if (barcodeData != null && barcodeData.contains("-")) {
+                try {
+                    String lastSegment = barcodeData.substring(barcodeData.lastIndexOf("-") + 1);
+                    itemIndex = Integer.parseInt(lastSegment) - 1;
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            eanCode = this.labelCodeService.generateEan13(label.getOrderItem(), itemIndex);
+        }
+
+        return new LabelDTO(
+                label.getLabelId(),
+                label.getBarCodeGs1(),
+                label.getBarcodeData(),
+                label.getProductionDate(),
+                label.getBestBeforeDate(),
+                label.getExitDate(),
+                label.getPrintedAt(),
+                label.isInventoryDecremented(),
+                productName,
+                batchCode,
+                eanCode
+        );
     }
 }

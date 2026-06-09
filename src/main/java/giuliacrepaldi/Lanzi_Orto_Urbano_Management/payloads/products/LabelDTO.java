@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record LabelDTO(
+        UUID labelId,
         String barCodeGs1,
         String barcodeData,
         LocalDate productionDate,
@@ -12,7 +13,8 @@ public record LabelDTO(
         LocalDate exitDate,
         LocalDateTime printedAt,
         boolean inventoryDecremented,
-        UUID batchId,
-        UUID productVariantId
+        String productName,
+        String batchCode,
+        String eanCode
 ) {
 }

@@ -8,6 +8,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -54,7 +56,6 @@ public class Product {
     @Column(name = "product_status", nullable = false)
     private ProductStatus productStatus = ProductStatus.DRAFT;
 
-
     @ManyToOne
     @JoinColumn(name = "product_category_id")
     private ProductCategory productCategory;
@@ -62,4 +63,17 @@ public class Product {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ProductImage> images = new ArrayList<>();
+
+
+    public void addImage(ProductImage image) {
+        if (this.images == null) {
+            this.images = new ArrayList<>();
+        }
+        this.images.add(image);
+        image.setProduct(this);
+    }
 }

@@ -1,6 +1,7 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.TypeActivity;
 import jakarta.persistence.*;
@@ -18,6 +19,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "b2b_profiles")
+@JsonIgnoreProperties({"user"})
 public class B2bProfile {
 
     @Id

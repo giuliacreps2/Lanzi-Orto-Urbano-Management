@@ -11,8 +11,8 @@ public record ProductCategoryAttributeDTO(
         AttributeType attrType,
         boolean required,
         String defaultValue,
-        String minValue,
-        String maxValue,
+        Double minValue,
+        Double maxValue,
         Unit unit,
         UUID productCategoryId
 

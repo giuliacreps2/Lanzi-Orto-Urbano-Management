@@ -34,16 +34,16 @@ public class ProductCategoryAttribute {
 
     private boolean required;
     private String defaultValue;
-    private String minValue;
-    private String maxValue;
+    private Double minValue;
+    private Double maxValue;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
     private Unit unit;
 
 
     @ManyToOne
     @JoinColumn(name = "product_category_id")
     private ProductCategory productCategory;
-    
+
 }

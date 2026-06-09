@@ -487,6 +487,32 @@ public class OrdersService {
         );
 
     }
+
+    public List<OrderSummaryDTO> findByUser(User currentUser) {
+        List<Order> orders;
+
+        if (currentUser.getB2bProfile() != null) {
+            orders = this.ordersRepository
+                    .findByB2bProfile_B2bProfileIdOrderByOrderCreatedAtDesc(
+                            currentUser.getB2bProfile().getB2bProfileId()
+                    );
+        } else {
+            orders = this.ordersRepository.findByB2cProfile_B2cProfileIdOrderByOrderCreatedAtDesc(
+                    currentUser.getB2cProfile().getB2cProfileId());
+        }
+
+        return orders.stream().limit(5).map(order -> new OrderSummaryDTO(
+                order.getOrderId(),
+                "ORD-" + order.getOrderId().toString().substring(0, 8).toUpperCase(),
+                order.getStatusOrder(),
+                order.getOrderCreatedAt(),
+                order.getTotalAmount(),
+                order.getItems().stream().map(item -> new OrderItemSummaryDTO(
+                        item.getProductVariant().getProduct().getProductName(),
+                        item.getQuantity()
+                )).toList()
+        )).toList();
+    }
 }
 
 

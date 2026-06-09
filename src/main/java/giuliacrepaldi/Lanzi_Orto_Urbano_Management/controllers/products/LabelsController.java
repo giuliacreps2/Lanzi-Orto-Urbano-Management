@@ -2,7 +2,6 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.controllers.products;
 
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Label;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.products.LabelDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.LabelsService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.utilities.BarcodeGenerator;
@@ -12,8 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.imageio.ImageIO;
@@ -36,17 +33,17 @@ public class LabelsController {
 
 
     //POST
-    @PostMapping("/new-lab")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Label createLabel(@RequestBody @Validated LabelDTO body, BindingResult validation) {
-        if (validation.hasErrors()) {
-            List<String> errors = validation.getFieldErrors()
-                    .stream().map(e -> e.getDefaultMessage()).toList();
-            throw new ValidationException(errors);
-        }
-        return this.labelsService.saveNewLabel(body);
-    }
+//    @PostMapping("/new-lab")
+//    @PreAuthorize("hasAuthority('ADMIN')")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public Label createLabel(@RequestBody @Validated LabelDTO body, BindingResult validation) {
+//        if (validation.hasErrors()) {
+//            List<String> errors = validation.getFieldErrors()
+//                    .stream().map(e -> e.getDefaultMessage()).toList();
+//            throw new ValidationException(errors);
+//        }
+//        return this.labelsService.saveNewLabel(body);
+//    }
 
     //GET
     @GetMapping("/{labelId}")
@@ -69,17 +66,17 @@ public class LabelsController {
     }
 
     //UPDATE
-    @PutMapping("/{labelId}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    @ResponseStatus(HttpStatus.OK)
-    public Label updateLabel(@PathVariable UUID labelId, @RequestBody @Validated LabelDTO body, BindingResult validation) {
-        if (validation.hasErrors()) {
-            List<String> errors = validation.getFieldErrors()
-                    .stream().map(e -> e.getDefaultMessage()).toList();
-            throw new ValidationException(errors);
-        }
-        return this.labelsService.findByIdAndUpdateLabel(labelId, body);
-    }
+//    @PutMapping("/{labelId}")
+//    @PreAuthorize("hasAuthority('ADMIN')")
+//    @ResponseStatus(HttpStatus.OK)
+//    public Label updateLabel(@PathVariable UUID labelId, @RequestBody @Validated LabelDTO body, BindingResult validation) {
+//        if (validation.hasErrors()) {
+//            List<String> errors = validation.getFieldErrors()
+//                    .stream().map(e -> e.getDefaultMessage()).toList();
+//            throw new ValidationException(errors);
+//        }
+//        return this.labelsService.findByIdAndUpdateLabel(labelId, body);
+//    }
 
     //DELETE
     @DeleteMapping("/{labelId}")
@@ -103,7 +100,7 @@ public class LabelsController {
     @PostMapping("/order/{orderId}/generate")
     @PreAuthorize("hasAuthority('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public List<Label> generateLabel(@PathVariable UUID orderId) {
+    public List<LabelDTO> generateLabel(@PathVariable UUID orderId) {
         return this.labelsService.generateLabelFromOrderId(orderId);
     }
 
