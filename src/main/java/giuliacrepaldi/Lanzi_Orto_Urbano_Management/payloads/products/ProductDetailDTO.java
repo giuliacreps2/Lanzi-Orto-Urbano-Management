@@ -5,7 +5,8 @@ import java.util.List;
 
 public record ProductDetailDTO(
         ProductInfoDTO product,
-        List<VariantInfoDTO> variants
+        List<VariantInfoDTO> variants,
+        List<ProductImageDTO> images
 ) {
 }
 

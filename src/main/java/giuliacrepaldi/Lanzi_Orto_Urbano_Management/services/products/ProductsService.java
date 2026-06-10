@@ -20,10 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -224,6 +221,23 @@ public class ProductsService {
 
                     Product product = variant.getProduct();
 
+                    String primaryImageUrl = product.getImages() != null
+                            ? product.getImages().stream()
+                            .filter(ProductImage::isPrimary)
+                            .map(ProductImage::getUrlImage)
+                            .findFirst()
+                            .orElse(null)
+                            : null;
+
+                    String primaryImageAlt = product.getImages() != null
+                            ? product.getImages().stream()
+                            .filter(ProductImage::isPrimary)
+                            .map(ProductImage::getAltText)
+                            .findFirst()
+                            .orElse(product.getProductName())
+                            : product.getProductName();
+
+
                     String priceLabel = clientCategory == ClientCategory.B2B
                             ? "+IVA"
                             : "IVA inclusa";
@@ -246,7 +260,9 @@ public class ProductsService {
                             priceLabel,
                             priceList.getMinOrderQuantity(),
                             product.isProductIsAvailable(),
-                            variant.isActiveVariant()
+                            variant.isActiveVariant(),
+                            primaryImageUrl,
+                            primaryImageAlt
                     );
                 })
                 .toList();
@@ -284,10 +300,13 @@ public class ProductsService {
 
         List<ProductCatalogDTO> catalog = getCatalogForUser(currentUser);
 
-        return catalog.stream()
+        List<ProductCatalogDTO> shuffled = new ArrayList<>(catalog);
+        Collections.shuffle(shuffled, new Random());
+
+        return shuffled.stream()
                 .filter(p -> !p.productSlug().equals(slug))
                 .filter(p -> {
-                    if (currentCategoryId != null) return true;
+                    if (currentCategoryId == null) return true;
 
                     Product prod = this.productsRepository.findByProductSlug(p.productSlug()).orElse(null);
                     if (prod == null || prod.getProductCategory() == null) return false;
@@ -482,7 +501,19 @@ public class ProductsService {
                 product.getProductCategory() != null ? product.getProductCategory().getNameProdCategory() : null
         );
 
-        return new ProductDetailDTO(productInfoDTO, variantDTOs);
+        List<ProductImageDTO> imageDTOs = product.getImages() != null
+                ? product.getImages().stream()
+                .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
+                .map(img -> new ProductImageDTO(
+                        img.getUrlImage(),
+                        img.getAltText(),
+                        img.isPrimary(),
+                        img.getSortOrder()
+                ))
+                .toList()
+                : List.of();
+
+        return new ProductDetailDTO(productInfoDTO, variantDTOs, imageDTOs);
     }
 
 

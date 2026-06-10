@@ -19,6 +19,8 @@ public record ProductCatalogDTO(
         String priceLabel,
         Integer minOrderQuantity,
         boolean productIsAvailable,
-        boolean activeVariant
+        boolean activeVariant,
+        String primaryImageUrl,
+        String primaryImageAlt
 ) {
 }
