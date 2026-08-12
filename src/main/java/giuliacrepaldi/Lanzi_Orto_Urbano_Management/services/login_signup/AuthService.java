@@ -1,10 +1,7 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup;
 
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2cProfile;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.RegistrationRequest;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.Role;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.AccountType;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
@@ -42,8 +39,10 @@ public class AuthService {
     private final AdminProfilesRepository adminProfilesRepository;
     private final AdminProfilesService adminProfilesService;
     private final EmailSender emailSender;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
-    public AuthService(UsersService usersService, UsersRepository usersRepository, TokenTools tokenTools, RegistrationRequestsService registrationRequestsService, RegistrationRequestsRepository registrationRequestsRepository, PasswordEncoder bcrypt, RolesRepository rolesRepository, RolesService rolesService, B2cProfilesRepository b2cProfilesRepository, UsersRolesService usersRolesService, B2bProfilesRepository b2bProfilesRepository, AdminProfilesRepository adminProfilesRepository, AdminProfilesService adminProfilesService, EmailSender emailSender) {
+
+    public AuthService(UsersService usersService, UsersRepository usersRepository, TokenTools tokenTools, RegistrationRequestsService registrationRequestsService, RegistrationRequestsRepository registrationRequestsRepository, PasswordEncoder bcrypt, RolesRepository rolesRepository, RolesService rolesService, B2cProfilesRepository b2cProfilesRepository, UsersRolesService usersRolesService, B2bProfilesRepository b2bProfilesRepository, AdminProfilesRepository adminProfilesRepository, AdminProfilesService adminProfilesService, EmailSender emailSender, PasswordResetTokenRepository passwordResetTokenRepository) {
         this.usersService = usersService;
         this.usersRepository = usersRepository;
         this.tokenTools = tokenTools;
@@ -58,6 +57,7 @@ public class AuthService {
         this.adminProfilesRepository = adminProfilesRepository;
         this.adminProfilesService = adminProfilesService;
         this.emailSender = emailSender;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
     }
 
 
@@ -84,7 +84,7 @@ public class AuthService {
         return "B2B profile has been approved successfully";
     }
 
-//APPROVAZIONE B2B DA PARTE DELL'ADMIN
+    //APPROVAZIONE B2B DA PARTE DELL'ADMIN
 
     //REJECTED
     @Transactional
@@ -241,6 +241,71 @@ public class AuthService {
                 found.isActive(),
                 found.isEmailVerified()
         );
+    }
+
+
+    //--------------------------------RESET PASSWORD---------------------------------------------//
+
+    public void requestPasswordReset(String email) {
+
+        try {
+            Optional<User> found = this.usersRepository.findByEmail(email);
+
+            if (found.isPresent()) {
+
+                List<PasswordResetToken> oldTokens = this.passwordResetTokenRepository
+                        .findByUserAndUsedFalse(found.get());
+                oldTokens.forEach(t -> t.setUsed(true));
+                this.passwordResetTokenRepository.saveAll(oldTokens);
+
+
+                String newToken = UUID.randomUUID().toString();
+
+                PasswordResetToken newPasswordReq = PasswordResetToken.builder()
+                        .user(found.get())
+                        .resetToken(newToken)
+                        .expiresAt(LocalDateTime.now().plusMinutes(30))
+                        .used(false)
+                        .build();
+
+                PasswordResetToken savedNewPasswordReq = this.passwordResetTokenRepository.save(newPasswordReq);
+
+                this.emailSender.sendNewPassword(savedNewPasswordReq);
+
+
+                log.info("Send new password request: {}", email);
+
+            }
+        } catch (Exception e) {
+            log.error("Errore invio email reset password per {}: {}", email, e.getMessage());
+        }
+    }
+
+
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetToken found = this.passwordResetTokenRepository.findByToken(token);
+
+        if (found == null) {
+            throw new BadRequestException("Token not valid");
+        }
+        if (found.isUsed()) {
+            throw new BadRequestException("Token has been used");
+        }
+        if (found.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Token expired");
+        }
+
+        User user = found.getUser();
+        user.setPassword(bcrypt.encode(newPassword));
+        this.usersRepository.save(user);
+
+        found.setUsed(true);
+        this.passwordResetTokenRepository.save(found);
+
+        this.emailSender.confirmNewPassword(found);
+
+        log.info("Password reset completed for user: {}", user.getEmail());
+
     }
 
 

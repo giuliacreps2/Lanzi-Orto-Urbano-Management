@@ -5,6 +5,7 @@ import com.resend.core.exception.ResendException;
 import com.resend.services.emails.model.CreateEmailOptions;
 import com.resend.services.emails.model.CreateEmailResponse;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProfile;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.PasswordResetToken;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.RegistrationRequest;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.RegisterB2bProfileDTO;
@@ -263,4 +264,58 @@ public class EmailSender {
     }
 
 
+    public void sendNewPassword(PasswordResetToken newPassword) {
+        try {
+            Resend resend = new Resend(apiKey);
+
+            String verifyUrl = "http://localhost:3000/reset-password?token=" + newPassword.getResetToken();
+
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("info@lanziortourbano.it")
+                    .to(newPassword.getUser().getEmail())
+                    .subject("Compila la tua nuova password")
+                    .html("""
+                            <h2>Reimposta la tua password</h2>
+                            <p>Hai richiesto di reimpostare la password del tuo account su Lanzi Orto Urbano.
+                            Clicca il link qui sotto per scegliere una nuova password:</p>
+                            <a href="%s" style="background:#2d6a4f;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;">
+                            Reimposta password
+                            </a>
+                            <p>Il link scade tra 30 minuti. Se non hai richiesto tu questa operazione, ignora questa email.</p>
+                            """.formatted(verifyUrl))
+                    .build();
+
+            CreateEmailResponse response = resend.emails().send(params);
+            log.info("Email to reset old password send successfully: '{}','{}'", newPassword.getUser().getEmail(), response.getId());
+
+        } catch (ResendException e) {
+            log.error("Email to reset old send failed for {}: {}", newPassword.getUser().getEmail(), e.getMessage());
+        }
+
+    }
+
+    public void confirmNewPassword(PasswordResetToken found) {
+        try {
+            Resend resend = new Resend(apiKey);
+
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("info@lanziortourbano.it")
+                    .to(found.getUser().getEmail())
+                    .subject("La tua password è stata modificata")
+                    .html("""
+                            <h2>Password modificata con successo</h2>
+                            <p>Ti confermiamo che la password del tuo account su Lanzi Orto Urbano
+                            è stata modificata correttamente.</p>
+                            <p>Se non sei stato tu a effettuare questa modifica, contattaci
+                            immediatamente rispondendo a questa email.</p>
+                            """)
+                    .build();
+
+            CreateEmailResponse response = resend.emails().send(params);
+            log.info("Email conferma cambio password inviata: '{}','{}'", found.getUser().getEmail(), response.getId());
+
+        } catch (ResendException e) {
+            log.error("Invio email conferma cambio password fallito per {}: {}", found.getUser().getEmail(), e.getMessage());
+        }
+    }
 }
