@@ -6,6 +6,7 @@ import com.resend.services.emails.model.CreateEmailOptions;
 import com.resend.services.emails.model.CreateEmailResponse;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProfile;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.RegistrationRequest;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.RegisterB2bProfileDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,7 @@ public class EmailSender {
     @Value("${resend.api-key}")
     private String apiKey;
 
+    //REGISTRATION EMAIL
     public void sendRegistrationEmail(RegistrationRequest req) {
         try {
             Resend resend = new Resend(apiKey);
@@ -42,10 +44,60 @@ public class EmailSender {
                     .build();
 
             CreateEmailResponse response = resend.emails().send(params);
-            log.info("Email send successful", req.getEmail(), response.getId());
+            log.info("Email send successfully: '{}','{}'", req.getEmail(), response.getId());
 
         } catch (ResendException e) {
             log.error("Email send failed for {}: {}", req.getEmail(), e.getMessage());
+        }
+    }
+
+    //WELCOME NEW USER
+    public void sendWelcomeEmail(User user) {
+        try {
+            Resend resend = new Resend(apiKey);
+
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("info@lanziortourbano.it")
+                    .to(user.getEmail())
+                    .subject("Identità digitale creata con successo!")
+                    .html("""
+                            <h2>Benvenuto/a su Lanzi Orto Urbano</h2>
+                            <p>Grazie per aver creato la tua identità digitale.</p>
+                            <p>Con il tuo indirizzo e-mail <strong>%s</strong> puoi accedere a tutti i nostri servizi.</p>
+                            <p>Se non hai creato tu questo account, contatta il nostro Servizio Clienti.</p>
+                            <p>Per iniziare ad ordinare, completa ora i dati della tua attività:</p>
+                            <p><a href="https://lanziortourbano.it/onboarding/azienda">Completa il profilo aziendale</a></p>
+                            """.formatted(user.getEmail()))
+                    .build();
+            CreateEmailResponse response = resend.emails().send(params);
+            log.info("Welcome email sent successfully to {}: {}", user.getEmail(), response.getId());
+        } catch (ResendException e) {
+            log.error("Welcome email failed for {}: {}", user.getEmail(), e.getMessage());
+        }
+    }
+
+    //MAIL NUOVO UTENTE B2C/B2B REGISTRATO
+    public void sendRegistrationEmailAdmin(RegistrationRequest req) {
+        try {
+            Resend resend = new Resend(apiKey);
+
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("info@lanziortourbano.it")
+                    .to("info@lanziortourbano.it")
+                    .subject("Nuovo utente registrato: " + req.getEmail())
+                    .html("""
+                            <h2>Nuovo utente Registrato su Lanzi Orto Urbano</h2>
+                            <h3>Un nuovo utente si è registrato nel sito.</h3>
+                            <p>I suoi dati sono:</p>
+                            <p>Email: %s</p>
+                            <p>Tipologia: %s</p>
+                            """.formatted(req.getEmail(), req.getClientCategory()))
+                    .build();
+            CreateEmailResponse response = resend.emails().send(params);
+            log.info("Email to admin send successful for {}: {}", req.getEmail(), response.getId());
+
+        } catch (ResendException e) {
+            log.error("Email to admin send failed for {}: {}", req.getEmail(), e.getMessage());
         }
     }
 
@@ -209,5 +261,6 @@ public class EmailSender {
             log.error("Admin notification failed: {}", e.getMessage());
         }
     }
+
 
 }

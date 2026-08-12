@@ -30,12 +30,20 @@ public class B2bProfile {
     private String vatNumber;
     @Column(nullable = true, unique = true)
     private String fiscalCode;
+
+    @Column
+    private String pec;
+    @Column
+    private String sdi_code;
+
     @Column(nullable = false)
     private String contactPhone;
-    @Column(nullable = false)
+
+    @Column
     private String contactName;
-    @Column(nullable = false)
+    @Column
     private String contactSurname;
+
     @Column(nullable = false)
     private String contactEmail;
     @Column(nullable = false)

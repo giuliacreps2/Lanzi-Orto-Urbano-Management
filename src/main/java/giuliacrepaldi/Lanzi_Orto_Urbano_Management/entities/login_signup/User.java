@@ -3,7 +3,6 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -88,11 +87,16 @@ public class User implements UserDetails {
         return true;
     }
 
+//    @Override
+//    public boolean isAccountNonLocked() {
+//        if (this.b2bProfile != null) {
+//            return StatusB2b.APPROVED.equals(this.b2bProfile.getStatusB2b());
+//        }
+//        return true;
+//    }
+
     @Override
     public boolean isAccountNonLocked() {
-        if (this.b2bProfile != null) {
-            return StatusB2b.APPROVED.equals(this.b2bProfile.getStatusB2b());
-        }
         return true;
     }
 

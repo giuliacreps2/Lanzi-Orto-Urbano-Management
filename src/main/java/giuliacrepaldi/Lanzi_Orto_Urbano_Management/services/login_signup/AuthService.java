@@ -1,10 +1,13 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.*;
+
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2cProfile;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.RegistrationRequest;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.Role;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.AccountType;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.StatusB2b;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.TypeActivity;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.UnauthorizedException;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+
 
 @Service
 @Slf4j
@@ -56,16 +60,137 @@ public class AuthService {
         this.emailSender = emailSender;
     }
 
-    //LOGIN ONLY
 
+    //____________________________________ADMIN___________________________________//
+
+    @Transactional
+    public String approveB2bProfile(UUID userId) {
+
+        User user = this.usersService.findById(userId);
+
+        if (user.getB2bProfile() == null) throw new BadRequestException("This user has no B2B profile");
+
+        if (user.getB2bProfile().getStatusB2b() == StatusB2b.APPROVED)
+            throw new BadRequestException("This user has already approved B2B profile");
+
+        user.getB2bProfile().setStatusB2b(StatusB2b.APPROVED);
+        user.setActive(true);
+        user.setUpdatedAt(LocalDateTime.now());
+        this.usersRepository.save(user);
+
+        this.emailSender.sendApprovalEmail(user.getEmail(), user.getB2bProfile().getContactName());
+
+        log.info("B2B profile approved for userId: {}", userId);
+        return "B2B profile has been approved successfully";
+    }
+
+//APPROVAZIONE B2B DA PARTE DELL'ADMIN
+
+    //REJECTED
+    @Transactional
+    public String rejectB2bProfile(UUID userId, String reason) {
+        User user = this.usersService.findById(userId);
+
+        if (user.getB2bProfile() == null)
+            throw new BadRequestException("This user has no B2B profile");
+
+        if (user.getB2bProfile().getStatusB2b() == StatusB2b.APPROVED)
+            throw new BadRequestException("Cannot reject an already approved profile");
+
+        if (user.getB2bProfile().getStatusB2b() == StatusB2b.REJECTED)
+            throw new BadRequestException("Profile already rejected");
+
+        user.getB2bProfile().setStatusB2b(StatusB2b.REJECTED);
+        user.getB2bProfile().setNotes(reason);
+        user.setUpdatedAt(LocalDateTime.now());
+        this.usersRepository.save(user);
+
+        this.emailSender.sendRejectionEmail(user.getEmail(), user.getB2bProfile().getContactName(), reason);
+
+        log.info("B2B profile rejected for userId: {}", userId);
+        return "B2B profile has been rejected";
+    }
+
+    //SIGN UP ADMIN PROFILE
+    public String registerNewAdminProfile(RegisterAdminProfileDTO body) {
+        if (this.usersRepository.existsByEmail(body.email()))
+            throw new BadRequestException("User with this email already exists");
+
+        if (this.registrationRequestsRepository
+                .existsByEmailAndIsUsedFalseAndTokenExpiresAtAfter(body.email(), LocalDateTime.now()))
+            throw new BadRequestException("A pending registration already exists for this email");
+
+        RegistrationRequest newR = RegistrationRequest.builder()
+                .email(body.email())
+                .verificationToken(UUID.randomUUID().toString())
+                .tokenExpiresAt(LocalDateTime.now().plusDays(1))
+                .isUsed(false)
+                .clientCategory(ClientCategory.B2C)
+                .metadata(Map.of(
+                        "name", body.name(),
+                        "surname", body.surname(),
+                        "password", this.bcrypt.encode(body.password()),
+                        "role", "ADMIN"
+                ))
+                .build();
+
+        this.registrationRequestsRepository.save(newR);
+        log.info("New admin profile has been registered successfully: {}", body.email());
+        return "New admin profile has been registered successfully";
+    }
+
+    //VERIFICA E CREAZIONE ADMIN
+    @Transactional
+    public NewUserRespDTO verifyAndCreateAdminRole(String token) {
+
+        RegistrationRequest found = this.registrationRequestsRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new NotFoundException("Token already exists"));
+
+        if (found.isUsed())
+            throw new BadRequestException("Token is already used");
+
+        if (found.getTokenExpiresAt().isBefore(LocalDateTime.now()))
+            throw new BadRequestException("Token is expired");
+
+        Map<String, Object> metadata = found.getMetadata();
+
+        User newUser = new User();
+        newUser.setEmail(found.getEmail());
+        newUser.setPassword((String) metadata.get("password"));
+        newUser.setActive(true);
+        newUser.setEmailVerified(true);
+        newUser.setPrivacyAccepted(true);
+        newUser.setPrivacyAcceptedAt(LocalDateTime.now());
+        newUser.setCreatedAt(LocalDateTime.now());
+        newUser.setUpdatedAt(LocalDateTime.now());
+
+        User savedNewUser = this.usersRepository.save(newUser);
+
+        adminProfilesService.saveAdminProfile(
+                savedNewUser,
+                (String) metadata.get("name"),
+                (String) metadata.get("surname")
+        );
+
+        Role newRole = this.rolesRepository.findByRoleName("ADMIN")
+                .orElseThrow(() -> new NotFoundException("Role ADMIN not found"));
+
+        usersRolesService.saveUserRole(savedNewUser, newRole);
+
+        found.setUsed(true);
+        found.setUsedAt(LocalDateTime.now());
+        this.registrationRequestsRepository.save(found);
+
+        return new NewUserRespDTO(savedNewUser.getUserId());
+
+    }
+
+
+    //---------------------------------------LOGIN-----------------------------------------//
+
+    //LOGIN ONLY
     public LoginRespDTO login(LoginDTO body) {
         User found = this.usersService.findByEmail(body.email());
-
-        log.info("EMAIL BODY" + body.email());
-        log.info("PASSWORD BODY" + body.password());
-        log.info("USER FOUND" + found.getEmail());
-        log.info("PASSWORD FOUND" + found.getPassword());
-        log.info("MATCHES" + this.bcrypt.matches(body.password(), found.getPassword()));
 
         if (!this.bcrypt.matches(body.password(), found.getPassword())) {
             throw new UnauthorizedException("Invalid Credentials");
@@ -79,6 +204,20 @@ public class AuthService {
                 .map(userRole -> userRole.getRole().getRoleName())
                 .toList();
 
+        return new LoginRespDTO(token, buildLoggedUserDTO(found, roles));
+    }
+
+    public LoggedUserDTO getCurrentUser(User found) {
+        List<String> roles = this.usersRolesService
+                .findRoleByUser(found)
+                .stream()
+                .map(userRole -> userRole.getRole().getRoleName())
+                .toList();
+
+        return buildLoggedUserDTO(found, roles);
+    }
+
+    private LoggedUserDTO buildLoggedUserDTO(User found, List<String> roles) {
         AccountType accountType;
 
         if (roles.contains(AccountType.ADMIN.toString())) {
@@ -91,77 +230,21 @@ public class AuthService {
             accountType = AccountType.UNKNOW;
         }
 
-        StatusB2b b2bStatus = found.getB2bProfile() != null ? found.getB2bProfile().getStatusB2b() : null;
+        StatusB2b statusB2b = found.getB2bProfile() != null ? found.getB2bProfile().getStatusB2b() : null;
 
-        LoggedUserDTO user = new LoggedUserDTO(
+        return new LoggedUserDTO(
                 found.getUserId(),
                 found.getEmail(),
                 roles,
                 accountType,
-                b2bStatus,
+                statusB2b,
                 found.isActive(),
                 found.isEmailVerified()
         );
-
-        return new LoginRespDTO(token, user);
-
     }
 
 
-//    public String checkCredentialsAndGenerateToken(LoginDTO body) {
-//
-//        try {
-//            User found = this.usersService.findByEmail(body.email());
-//            //Controllo psw
-//            if (this.bcrypt.matches(body.password(), found.getPassword())) {
-//                return this.tokenTools.generateToken(found);
-//            } else {
-//                throw new UnauthorizedException("Invalid Credentials");
-//            }
-//
-//        } catch (NotFoundException ex) {
-//            throw new NotFoundException("Invalid Credentials");
-//        }
-//
-//    }
-
-    //SIGN UP B2C
-//    public String registerNewB2cProfile(RegisterUserDTO body) {
-//
-//        if (this.usersRepository.existsByEmail(body.email()))
-//            throw new BadRequestException("User with this email already exists");
-//
-//        if (this.registrationRequestsRepository.existsByEmailAndIsUsedFalseAndTokenExpiresAtAfter(body.email(), LocalDateTime.now()))
-//            throw new BadRequestException("Check out in your registration request. Your token is here");
-//
-//        RegistrationRequest newR = RegistrationRequest.builder()
-//                .email(body.email())
-//                .verificationToken(UUID.randomUUID().toString())
-//                .tokenExpiresAt(LocalDateTime.now().plusDays(1))
-//                .isUsed(false)
-//                .createdAt(LocalDateTime.now())
-//                .clientCategory(ClientCategory.B2C)
-//                .metadata(Map.of("name", body.name(),
-//                        "password", Objects.requireNonNull(this.bcrypt.encode(body.password())), "phoneNumber", body.phoneNumber()
-//                        , "privacyAccepted", body.privacyAccepted()))
-//                .build();
-//
-//
-//        log.info("VERIFYING TOKEN FOR THE USER" + newR.getVerificationToken());
-//        log.info("NAME BODY" + newR.getMetadata().get("name"));
-//        log.info("PHONE BODY" + newR.getMetadata().get("phoneNumber"));
-//        log.info("EMAIL BODY" + newR.getMetadata().get("email"));
-//        log.info("PASSWORD BODY" + newR.getMetadata().get("password"));
-//        log.info("PRIVACY BODY" + newR.getMetadata().get("privacyAccepted"));
-//
-//
-//        RegistrationRequest savedR = this.registrationRequestsRepository.save(newR);
-//
-//        //            this.emailSender.sendRegistrationEmail(savedR);
-//
-//        log.info("New B2C registration request for: {}", body.email());
-//        return "Your registration has taken place. Please check your email to verify your account.";
-//    }
+    //-----------------------------------------------B2C-----------------------------------------//
 
 
     // SIGN UP B2C
@@ -261,50 +344,23 @@ public class AuthService {
     //____________________________________B2B___________________________________//
 
 
-    //SIGN UP B2B
-    public String registerNewB2bProfile(RegisterB2bProfileDTO body) {
-        boolean hasVatNumber = body.vatNumber() != null && !body.vatNumber().isBlank();
-        boolean hasFiscalCode = body.fiscalCode() != null && !body.fiscalCode().isBlank();
+    //STEP 1. SIGN UP B2B AS B2C
+    public String registerNewB2bAccount(RegisterB2bAccountDTO body) {
 
-        if (this.usersRepository.existsByEmail(body.contactEmail()))
-            throw new BadRequestException("User with this email already exists");
+        if (this.usersRepository.existsByEmail(body.email()))
+            throw new BadRequestException("Email already exists");
 
-        if (this.registrationRequestsRepository.existsByEmailAndIsUsedFalseAndTokenExpiresAtAfter(body.contactEmail(), LocalDateTime.now()))
+        if (this.registrationRequestsRepository.existsByEmailAndIsUsedFalseAndTokenExpiresAtAfter(body.email(), LocalDateTime.now()))
             throw new BadRequestException("Check out in your registration request. Your token is here");
 
-        if (!hasVatNumber && !hasFiscalCode) {
-            throw new BadRequestException("VAT number or fiscal code is required");
-        }
-
-        if (hasVatNumber && this.b2bProfilesRepository.existsByVatNumber(body.vatNumber())) {
-            throw new BadRequestException("VAT number already exists");
-        }
-
-        if (hasFiscalCode && this.b2bProfilesRepository.existsByFiscalCode(body.fiscalCode())) {
-            throw new BadRequestException("Fiscal code already exists");
-        }
-
-//        if (this.b2bProfilesRepository.existsByFiscalCode(body.fiscalCode()) || this.b2bProfilesRepository.existsByVatNumber(body.vatNumber()))
-//            throw new BadRequestException("User with this vat number or fiscal code already exists");
-
-
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("contactName", body.contactName());
-        metadata.put("contactSurname", body.contactSurname());
-        metadata.put("contactEmail", body.contactEmail());
         metadata.put("password", this.bcrypt.encode(body.password()));
-        metadata.put("contactPhone", body.contactPhone());
-        metadata.put("vatNumber", body.vatNumber());
-        metadata.put("fiscalCode", body.fiscalCode());
-        metadata.put("companyName", body.companyName());
-        metadata.put("typeActivity", body.typeActivity() != null ? body.typeActivity().name() : null);
-        metadata.put("municipalityId", body.municipalityId() != null ? body.municipalityId() : null);
         metadata.put("privacyAccepted", body.privacyAccepted());
 
         String token = UUID.randomUUID().toString();
 
         RegistrationRequest newR = RegistrationRequest.builder()
-                .email(body.contactEmail())
+                .email(body.email())
                 .verificationToken(token)
                 .tokenExpiresAt(LocalDateTime.now().plusDays(1))
                 .isUsed(false)
@@ -315,19 +371,20 @@ public class AuthService {
 
         RegistrationRequest savedR = this.registrationRequestsRepository.save(newR);
 
-        this.emailSender.sendB2bPendingEmail(body.contactEmail(), body.contactName());
+        this.emailSender.sendRegistrationEmail(savedR);
 
-        this.emailSender.notifyAdminForApprovalFromRegistration(body, token);
+        //METODO PER INVIARE MAIL ALL'ADMIN PER REGISTRAZIONE NUOVO UTENTE
+        this.emailSender.sendRegistrationEmailAdmin(savedR);
 
 
-        log.info("New B2B registration request for: {}", body.contactEmail());
-        return "Your registration request has been received. We will verify your data shortly.";
+        log.info("New User B2B completed registration as B2c User: {}", body.email());
+        return "Your registration request has been successfully completed";
     }
 
-    //VERIFICA E CREAZIONE UTENTE B2B
+    //STEP 2. VERIFICATION USER B2B AS B2C
     @Transactional
-    public NewUserRespDTO verifyAndCreateB2bProfile(String token) {
-        log.info("TOKEN RICEVUTO: '{}'", token);
+    public NewUserRespDTO verifyAndCreateB2bAccount(String token) {
+        log.info("TOKEN received: '{}'", token);
 
         RegistrationRequest found = this.registrationRequestsRepository.findByVerificationToken(token)
                 .orElseThrow(() -> new NotFoundException("Registration request token not found"));
@@ -352,170 +409,59 @@ public class AuthService {
 
         User savedNewUser = this.usersRepository.save(newUser);
 
-        //CREAZIONE B2B PROFILE
-        if (found.getClientCategory() == ClientCategory.B2B) {
-            B2bProfile newB2bProfile = new B2bProfile();
-            newB2bProfile.setContactName((String) metadata.get("contactName"));
-            newB2bProfile.setContactSurname((String) metadata.get("contactSurname"));
-            newB2bProfile.setContactPhone((String) metadata.get("contactPhone"));
-            newB2bProfile.setContactEmail(found.getEmail());
-            newB2bProfile.setVatNumber((String) metadata.get("vatNumber"));
-            newB2bProfile.setFiscalCode((String) metadata.get("fiscalCode"));
-            newB2bProfile.setCompanyName((String) metadata.get("companyName"));
-            newB2bProfile.setTypeActivity(TypeActivity.valueOf((String) metadata.get("typeActivity")));
-            newB2bProfile.setLoyaltyPoints(20L);
-            newB2bProfile.setStatusB2b(StatusB2b.APPROVED);
-            newB2bProfile.setUser(savedNewUser);
-
-            b2bProfilesRepository.save(newB2bProfile);
-
-            B2bProfile savedB2bProfile = b2bProfilesRepository.save(newB2bProfile);
-//            this.emailSender.notifyAdminForApproval(savedNewUser.getUserId(), savedB2bProfile);
-            this.emailSender.sendApprovalEmail(newUser.getEmail(), newB2bProfile.getContactName());
-        }
-
-
         Role newRole = this.rolesRepository.findByRoleName("USER")
                 .orElseThrow(() -> new NotFoundException("Role not found"));
 
-        //Devo inviare una mail all'amministratore per la verifica del p.iva o del cf
-        //Devo cambiare mettere lo stato pending, finchè l'amministratore non dà conferma
-        //Devo inviare un messaggio all'utente con "Stiamo verificando i tuoi dati"
-        //Devo cambiare lo stato da pending ad accepted
-        //Se non viene accettato deve provare a riscrivere i dati
-        //quindi il form nel frontend si resetta
-
         usersRolesService.saveUserRole(savedNewUser, newRole);
 
         found.setUsed(true);
         found.setUsedAt(LocalDateTime.now());
         this.registrationRequestsRepository.save(found);
 
+        this.emailSender.sendWelcomeEmail(savedNewUser);
+
+        log.info("New B2B user account created, company profile still pending: {}", savedNewUser.getEmail());
         return new NewUserRespDTO(savedNewUser.getUserId());
     }
 
 
-    //APPROVAZIONE B2B DA PARTE DELL'ADMIN
-    @Transactional
-    public String approveB2bProfile(UUID userId) {
+//    //STEP 3. CREATION B2B PROFILE
+//    @Transactional
+//    public B2bProfileRespDTO createB2bProfile(User authenticatedUser, RegisterB2bFirstProfileDTO body) {
+//
+//        boolean hasVatNumber = body.vatNumber() != null && !body.vatNumber().isBlank();
+//        boolean hasFiscalCode = body.fiscalCode() != null && !body.fiscalCode().isBlank();
+//
+//        if (authenticatedUser.getB2bProfile() != null)
+//            throw new BadRequestException("This user already has a B2B profile");
+//
+//        if (!hasVatNumber && !hasFiscalCode)
+//            throw new BadRequestException("VAT number or fiscal code is required");
+//
+//        if (hasVatNumber && this.b2bProfilesRepository.existsByVatNumber(body.vatNumber()))
+//            throw new BadRequestException("VAT number already exists");
+//
+//        if (hasFiscalCode && this.b2bProfilesRepository.existsByFiscalCode(body.fiscalCode()))
+//            throw new BadRequestException("VAT number already exists");
+//
+//        B2bProfile newB2bProfile = new B2bProfile();
+//        newB2bProfile.setContactPhone(body.contactPhone());
+//        newB2bProfile.setContactEmail(authenticatedUser.getEmail());
+//        newB2bProfile.setVatNumber(body.vatNumber());
+//        newB2bProfile.setFiscalCode(body.fiscalCode());
+//        newB2bProfile.setCompanyName(body.companyName());
+//        newB2bProfile.setTypeActivity(body.typeActivity());
+//        newB2bProfile.setLoyaltyPoints(20L);
+//        newB2bProfile.setStatusB2b(StatusB2b.PENDING);
+//        newB2bProfile.setUser(authenticatedUser);
+//
+//        B2bProfile savedB2bProfile = this.b2bProfilesRepository.save(newB2bProfile);
+//
+//        this.emailSender.sendB2bPendingEmail(authenticatedUser.getEmail(), body.contactEmail());
+//        this.emailSender.notifyAdminForApproval(authenticatedUser.getUserId(), savedB2bProfile);
+//
+//        log.info("B2B profile submitted for review, userId: {}", authenticatedUser.getUserId());
+//        return new B2bProfileRespDTO(savedB2bProfile.getB2bProfileId(), savedB2bProfile.getStatusB2b());
+//    }
 
-        User user = this.usersService.findById(userId);
-
-        if (user.getB2bProfile() == null) throw new BadRequestException("This user has no B2B profile");
-
-        if (user.getB2bProfile().getStatusB2b() == StatusB2b.APPROVED)
-            throw new BadRequestException("This user has already approved B2B profile");
-
-        user.getB2bProfile().setStatusB2b(StatusB2b.APPROVED);
-        user.setActive(true);
-        user.setUpdatedAt(LocalDateTime.now());
-        this.usersRepository.save(user);
-
-        this.emailSender.sendApprovalEmail(user.getEmail(), user.getB2bProfile().getContactName());
-
-        log.info("B2B profile approved for userId: {}", userId);
-        return "B2B profile has been approved successfully";
-    }
-
-
-    //REJECTED
-    @Transactional
-    public String rejectB2bProfile(UUID userId, String reason) {
-        User user = this.usersService.findById(userId);
-
-        if (user.getB2bProfile() == null)
-            throw new BadRequestException("This user has no B2B profile");
-
-        if (user.getB2bProfile().getStatusB2b() == StatusB2b.APPROVED)
-            throw new BadRequestException("Cannot reject an already approved profile");
-
-        if (user.getB2bProfile().getStatusB2b() == StatusB2b.REJECTED)
-            throw new BadRequestException("Profile already rejected");
-
-        user.getB2bProfile().setStatusB2b(StatusB2b.REJECTED);
-        user.getB2bProfile().setNotes(reason);
-        user.setUpdatedAt(LocalDateTime.now());
-        this.usersRepository.save(user);
-
-        this.emailSender.sendRejectionEmail(user.getEmail(), user.getB2bProfile().getContactName(), reason);
-
-        log.info("B2B profile rejected for userId: {}", userId);
-        return "B2B profile has been rejected";
-    }
-
-
-    //____________________________________ADMIN___________________________________//
-
-    //SIGN UP ADMIN PROFILE
-    public String registerNewAdminProfile(RegisterAdminProfileDTO body) {
-        if (this.usersRepository.existsByEmail(body.email()))
-            throw new BadRequestException("User with this email already exists");
-
-        if (this.registrationRequestsRepository
-                .existsByEmailAndIsUsedFalseAndTokenExpiresAtAfter(body.email(), LocalDateTime.now()))
-            throw new BadRequestException("A pending registration already exists for this email");
-
-        RegistrationRequest newR = RegistrationRequest.builder()
-                .email(body.email())
-                .verificationToken(UUID.randomUUID().toString())
-                .tokenExpiresAt(LocalDateTime.now().plusDays(1))
-                .isUsed(false)
-                .clientCategory(ClientCategory.B2C)
-                .metadata(Map.of(
-                        "name", body.name(),
-                        "surname", body.surname(),
-                        "password", this.bcrypt.encode(body.password()),
-                        "role", "ADMIN"
-                ))
-                .build();
-
-        this.registrationRequestsRepository.save(newR);
-        log.info("New admin profile has been registered successfully: {}", body.email());
-        return "New admin profile has been registered successfully";
-    }
-
-    //VERIFICA E CREAZIONE ADMIN
-    @Transactional
-    public NewUserRespDTO verifyAndCreateAdminRole(String token) {
-
-        RegistrationRequest found = this.registrationRequestsRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new NotFoundException("Token already exists"));
-
-        if (found.isUsed())
-            throw new BadRequestException("Token is already used");
-
-        if (found.getTokenExpiresAt().isBefore(LocalDateTime.now()))
-            throw new BadRequestException("Token is expired");
-
-        Map<String, Object> metadata = found.getMetadata();
-
-        User newUser = new User();
-        newUser.setEmail(found.getEmail());
-        newUser.setPassword((String) metadata.get("password"));
-        newUser.setActive(true);
-        newUser.setEmailVerified(true);
-        newUser.setPrivacyAccepted(true);
-        newUser.setPrivacyAcceptedAt(LocalDateTime.now());
-        newUser.setCreatedAt(LocalDateTime.now());
-        newUser.setUpdatedAt(LocalDateTime.now());
-
-        User savedNewUser = this.usersRepository.save(newUser);
-
-        adminProfilesService.saveAdminProfile(
-                savedNewUser,
-                (String) metadata.get("name"),
-                (String) metadata.get("surname")
-        );
-
-        Role newRole = this.rolesRepository.findByRoleName("ADMIN")
-                .orElseThrow(() -> new NotFoundException("Role ADMIN not found"));
-
-        usersRolesService.saveUserRole(savedNewUser, newRole);
-
-        found.setUsed(true);
-        found.setUsedAt(LocalDateTime.now());
-        this.registrationRequestsRepository.save(found);
-
-        return new NewUserRespDTO(savedNewUser.getUserId());
-    }
 }

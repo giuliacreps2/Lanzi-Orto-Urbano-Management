@@ -15,6 +15,5 @@ public record LoggedUserDTO(
         boolean active,
         boolean emailVerified
 
-
 ) {
 }

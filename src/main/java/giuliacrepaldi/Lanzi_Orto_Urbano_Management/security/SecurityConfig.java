@@ -1,13 +1,12 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.security;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -33,12 +32,20 @@ public class SecurityConfig {
         httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource()));
         httpSecurity.addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);
         httpSecurity.sessionManagement(sessions -> sessions.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        httpSecurity.exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"message\": \"Not authenticated\"}");
+                })
+        );
+        
         httpSecurity.formLogin(formLogin -> formLogin.disable());
         httpSecurity.csrf(csrf -> csrf.disable());
 
         httpSecurity.authorizeHttpRequests(req -> req
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/municipalities/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/products/catalog").permitAll()
                 .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
@@ -49,7 +56,6 @@ public class SecurityConfig {
 
                 .requestMatchers(HttpMethod.GET, "/orders/my").authenticated()
                 .requestMatchers(HttpMethod.GET, "/b2b/me").authenticated()
-                .requestMatchers(HttpMethod.GET, "/orders/my").authenticated()
 
                 .requestMatchers(HttpMethod.POST, "/products/**").hasAuthority("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/packaging/**").hasAuthority("ADMIN")
@@ -59,17 +65,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/labels/*/label").permitAll()
                 .requestMatchers("/api/import/**").hasAuthority("ADMIN")
                 .requestMatchers("/roles/**").hasAuthority("ADMIN")
-                .requestMatchers("/auth/b2b/*/approve", "/auth/b2b/*/reject").permitAll()
+                .requestMatchers("/auth/b2b/*/approve", "/auth/b2b/*/reject").hasAuthority("ADMIN")
                 .requestMatchers("/register/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
+                .requestMatchers("/auth/**").permitAll()
                 .anyRequest().authenticated()
         );
 
         return httpSecurity.build();
-    }
-
-    @Bean
-    public PasswordEncoder getBCrypt() {
-        return new BCryptPasswordEncoder(12);
     }
 
     @Bean

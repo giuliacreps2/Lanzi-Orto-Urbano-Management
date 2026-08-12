@@ -6,10 +6,10 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.UsersRo
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.UsersService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,15 +26,18 @@ import java.util.UUID;
 @Component
 public class TokenFilter extends OncePerRequestFilter {
 
+    private static final String COOKIE_NAME = "accessToken";
+
     private final TokenTools tokenTools;
     private final UsersService usersService;
     private final UsersRolesService usersRolesService;
 
-    public TokenFilter(TokenTools tokenTools, @Lazy UsersService usersService, @Lazy UsersRolesService usersRolesService) {
+    public TokenFilter(TokenTools tokenTools, UsersService usersService, UsersRolesService usersRolesService) {
         this.tokenTools = tokenTools;
         this.usersService = usersService;
         this.usersRolesService = usersRolesService;
     }
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -43,54 +46,57 @@ public class TokenFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        
-        String authHeader = request.getHeader("Authorization");
 
+        String accessToken = extractTokenFromCookies(request);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-//            throw new UnauthorizedException("Invalid Token. Please provide a valid Token");
-
-
-        String accessToken = authHeader.replace("Bearer ", "").trim();
-
-        if (accessToken.isEmpty() || accessToken.equalsIgnoreCase("null") || accessToken.equalsIgnoreCase("undefined")) {
-            log.info("Rilevato token testuale non valido (null/undefined) dal client per la rotta: {}", request.getServletPath());
+        if (accessToken == null || accessToken.isEmpty()
+                || accessToken.equalsIgnoreCase("null") || accessToken.equalsIgnoreCase("undefined")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
+            UUID userId = tokenTools.extractUserId(accessToken);
+            User user = usersService.findById(userId);
 
-            UUID userDb = tokenTools.extractUserId(accessToken);
-            User user = usersService.findById(userDb);
-
-            List<UserRole> listRoles = usersRolesService.findByUserId(userDb);
+            List<UserRole> listRoles = usersRolesService.findByUserId(userId);
             List<SimpleGrantedAuthority> authorities = listRoles
                     .stream()
-                    .map(userRole -> new SimpleGrantedAuthority(userRole.getRole().getRoleName())).toList();
+                    .map(userRole -> new SimpleGrantedAuthority(userRole.getRole().getRoleName()))
+                    .toList();
+
             Authentication authenticationToken = new UsernamePasswordAuthenticationToken(user, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-
-
-            log.info("TOKEN FILTER ACTIVE ON: " + request.getServletPath());
         } catch (Exception e) {
-            log.info("Errore durante la validazione del token sulla rotta {}: {}", request.getServletPath(), e.getMessage());
-            throw e;
+            // Token non valido/scaduto/utente non trovato: procedi come richiesta anonima.
+            // Sarà Spring Security (o il controller) a rispondere 401/403 se la rotta è protetta.
+            log.debug("Token non valido per {}: {}", request.getServletPath(), e.getMessage());
+            SecurityContextHolder.clearContext();
         }
+
         filterChain.doFilter(request, response);
+    }
+
+    private String extractTokenFromCookies(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+        for (Cookie cookie : cookies) {
+            if (COOKIE_NAME.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String servletPath = request.getServletPath();
-        log.info("SHOULD NOT FILTER - servletPath: " + servletPath);
-
         AntPathMatcher antPathMatcher = new AntPathMatcher();
 
-        return antPathMatcher.match("/auth/**", request.getServletPath())
-                || antPathMatcher.match("/register/**", request.getServletPath());
+        return antPathMatcher.match("/auth/login", servletPath)
+                || antPathMatcher.match("/auth/logout", servletPath)
+                || antPathMatcher.match("/register/**", servletPath);
     }
 }

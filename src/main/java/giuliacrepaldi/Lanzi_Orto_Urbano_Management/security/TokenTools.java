@@ -29,16 +29,6 @@ public class TokenTools {
                 .compact();
     }
 
-    //TO VERIFY TOKEN
-    public void verifyToken(String token) {
-        try {
-            Jwts.parser().verifyWith(Keys.hmacShaKeyFor(secret.getBytes())).build().parseSignedClaims(token);
-        } catch (Exception e) {
-            throw new UnauthorizedException("Invalid token");
-        }
-    }
-
-
     //TO READ TOKEN with ID
     public UUID extractUserId(String token) {
         try {
@@ -46,7 +36,7 @@ public class TokenTools {
                     .getPayload().getSubject();
             return UUID.fromString(subject);
         } catch (Exception e) {
-            throw new UnauthorizedException("Invalid token");
+            throw new UnauthorizedException("Invalid or expired token");
         }
     }
 
