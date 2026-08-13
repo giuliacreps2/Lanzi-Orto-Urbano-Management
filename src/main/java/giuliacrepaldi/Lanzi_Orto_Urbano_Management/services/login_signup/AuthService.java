@@ -283,7 +283,7 @@ public class AuthService {
 
 
     public void resetPassword(String token, String newPassword) {
-        PasswordResetToken found = this.passwordResetTokenRepository.findByToken(token);
+        PasswordResetToken found = this.passwordResetTokenRepository.findByResetToken(token);
 
         if (found == null) {
             throw new BadRequestException("Token not valid");

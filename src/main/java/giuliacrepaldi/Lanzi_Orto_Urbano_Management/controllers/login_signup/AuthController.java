@@ -8,6 +8,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationExceptio
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -47,7 +48,6 @@ public class AuthController {
         return result.user();
     }
 
-
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.OK)
     public Map<String, String> logout(HttpServletResponse response) {
@@ -64,6 +64,19 @@ public class AuthController {
         return this.authService.getCurrentUser(user);
     }
 
+    //----------------------------RESET PASSWORD----------------------------//
+
+    @PostMapping("/password-reset/request")
+    @ResponseStatus(HttpStatus.OK)
+    public void requestPasswordReset(@RequestBody RequestNewPasswordDTO body) {
+        this.authService.requestPasswordReset(body.email());
+    }
+
+    @PostMapping("/password-reset/confirm")
+    @ResponseStatus(HttpStatus.OK)
+    public void confirmPasswordReset(@Valid @RequestBody ConfirmNewPasswordDTO body) {
+        this.authService.resetPassword(body.token(), body.newPassword());
+    }
 
     //------------------------------
     @PostMapping("/register/b2c")
