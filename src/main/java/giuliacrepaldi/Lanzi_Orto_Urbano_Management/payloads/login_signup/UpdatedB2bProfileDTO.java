@@ -5,7 +5,7 @@ import jakarta.validation.constraints.*;
 
 import java.util.UUID;
 
-public record RegisterB2bProfileDTO(
+public record UpdatedB2bProfileDTO(
         @NotBlank(message = "Contact name is required")
         String contactName,
         @NotBlank(message = "Contact surname is required")

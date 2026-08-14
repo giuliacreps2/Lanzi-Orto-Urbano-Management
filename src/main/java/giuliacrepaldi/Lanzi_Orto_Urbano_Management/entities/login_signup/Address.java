@@ -26,13 +26,13 @@ public class Address {
     @Column(nullable = false)
     private String locality;
     @Column(nullable = false)
-    private Integer postalCode;
+    private String postalCode;
 
     @ManyToOne
     @JoinColumn(name = "municipality_id")
     private Municipality municipality;
 
-    public Address(String street, Integer number, String locality, Integer postalCode, Municipality municipality) {
+    public Address(String street, Integer number, String locality, String postalCode, Municipality municipality) {
         this.street = street;
         this.number = number;
         this.locality = locality;

@@ -22,7 +22,7 @@ public class B2cProfile {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID B2cProfileId;
 
-    @Column(nullable = false)
+    @Column
     private String name;
     @Column
     private String surname;

@@ -1,11 +1,11 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.controllers.login_signup;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.cookie.CookieUtils;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.RegistrationRequest;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.UnauthorizedException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.*;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.security.TokenTools;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -28,10 +28,12 @@ public class AuthController {
 
     private final AuthService authService;
     private final CookieUtils cookieUtils;
+    private final TokenTools tokenTools;
 
-    public AuthController(AuthService authService, CookieUtils cookieUtils) {
+    public AuthController(AuthService authService, CookieUtils cookieUtils, TokenTools tokenTools) {
         this.authService = authService;
         this.cookieUtils = cookieUtils;
+        this.tokenTools = tokenTools;
     }
 
 
@@ -78,49 +80,43 @@ public class AuthController {
         this.authService.resetPassword(body.token(), body.newPassword());
     }
 
-    //------------------------------
-    @PostMapping("/register/b2c")
+    //------------------------------SIGN IN--------------------------------//
+
+
+    //------B2C AND B2B AS B2C--------//
+    //STEP. 1
+
+    //RICHIESTA
+    @PostMapping("/register/new-user")
     @ResponseStatus(HttpStatus.CREATED)
-    public RegistrationRequest registerB2c(@RequestBody @Validated RegisterUserDTO body, BindingResult validationResult) {
-        if (validationResult.hasErrors()) {
-            List<String> errors = validationResult.getFieldErrors().stream()
-                    .map(error -> error.getDefaultMessage())
-                    .toList();
-            throw new ValidationException(errors);
-        }
-        return this.authService.registerNewB2cProfile(body);
-    }
-
-    //VERIFICA EMAIL
-    @GetMapping("/verify/b2c")
-    @ResponseStatus(HttpStatus.CREATED)
-    public NewUserRespDTO verifyB2c(@RequestParam("token") String token) {
-        return this.authService.verifyAndCreateUser(token);
-    }
-
-
-    //-------------------------------------------------B2B---------------------------------------//
-
-    //STEP 1. SIGN UP B2B AS B2C
-    @PostMapping("/register/b2b-user")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, String> registerNewB2b(@RequestBody @Validated RegisterB2bAccountDTO body, BindingResult validationResult) {
+    public Map<String, String> registerNewB2c(@RequestBody @Validated RegisterAccountUserDTO body, BindingResult validationResult) {
         if (validationResult.hasErrors()) {
             List<String> errors = validationResult.getFieldErrors().stream().map(error -> error.getDefaultMessage()).toList();
             throw new ValidationException(errors);
         }
-        String message = this.authService.registerNewB2bAccount(body);
+        String message = this.authService.registerNewUserAccount(body);
         return Map.of("message", message);
     }
 
-    //STEP 2. VERIFICATION USER B2B AS B2C
-    @GetMapping("/verify/account/b2b")
+
+    //STEP. 2
+
+    //VERIFICA EMAIL
+    @GetMapping("/verify/new-account")
     @ResponseStatus(HttpStatus.OK)
-    public NewUserRespDTO verifyNewB2b(@RequestParam("token") String token) {
-        return this.authService.verifyAndCreateB2bAccount(token);
+    public NewUserRespDTO verifyB2c(@RequestParam("token") String token, HttpServletResponse response) {
+        User user = this.authService.verifyAndCreateB2cAccount(token);
+
+        String accessToken = this.tokenTools.generateToken(user);
+
+        ResponseCookie cookie = cookieUtils.createAccessTokenCookie(accessToken, Duration.ofDays(7));
+
+        return new NewUserRespDTO(user.getUserId());
     }
 
-//
+    //-------------------------------------------------B2B---------------------------------------//
+
+    
 //    //REGISTRAZIONE B2B
 //    @PostMapping("/register/b2b")
 //    @ResponseStatus(HttpStatus.CREATED)

@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 
 public record UserDTO(
         @NotBlank(message = "Email is mandatory")
-        @Email(message = "Email is not correct")
+        @Email(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "Email is not correct")
         String email,
         @NotBlank(message = "Your password is mandatory")
         @Size(min = 8, message = "Your password must have at least 8 characters")

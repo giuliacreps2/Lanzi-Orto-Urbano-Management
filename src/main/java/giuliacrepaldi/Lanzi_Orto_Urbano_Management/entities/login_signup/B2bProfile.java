@@ -44,7 +44,7 @@ public class B2bProfile {
     @Column
     private String contactSurname;
 
-    @Column(nullable = false)
+    @Column
     private String contactEmail;
     @Column(nullable = false)
     private String companyName;
@@ -73,10 +73,6 @@ public class B2bProfile {
     @ManyToOne
     @JoinColumn(name = "legal_address_id")
     private Address legalAddress;
-
-    @ManyToOne
-    @JoinColumn(name = "municipality_id")
-    private Municipality municipality;
 
 
     public B2bProfile(String vatNumber, String fiscalCode, String contactName, String contactSurname, String contactPhone, String contactEmail, String companyName, Long loyaltyPoints, TypeActivity typeActivity, StatusB2b statusB2b, User user) {

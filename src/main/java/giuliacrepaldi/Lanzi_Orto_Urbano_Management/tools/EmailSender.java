@@ -8,7 +8,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProf
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.PasswordResetToken;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.RegistrationRequest;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.RegisterB2bProfileDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.UpdatedB2bProfileDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -104,7 +104,7 @@ public class EmailSender {
 
 
     //MAIL DOPO REGISTRAZIONE
-    public void sendB2bPendingEmail(String toEmail, String contactName) {
+    public void sendB2bPendingEmail(String toEmail) {
         try {
             Resend resend = new Resend(apiKey);
 
@@ -117,7 +117,7 @@ public class EmailSender {
                             <p>Abbiamo ricevuto la tua richiesta di registrazione come partner B2B</p>
                             <p>Il nostro team verificherà i tuoi dati aziendali entro <strong>12 ore</strong>.</p>
                             <p>Riceverai una email di conferma non appena il tuo account sarà attivato.</p>
-                            """.formatted(contactName))
+                            """.formatted(toEmail))
                     .build();
 
             resend.emails().send(params);
@@ -219,7 +219,7 @@ public class EmailSender {
         }
     }
 
-    public void notifyAdminForApprovalFromRegistration(RegisterB2bProfileDTO body, String token) {
+    public void notifyAdminForApprovalFromRegistration(UpdatedB2bProfileDTO body, String token) {
         try {
             Resend resend = new Resend(apiKey);
 

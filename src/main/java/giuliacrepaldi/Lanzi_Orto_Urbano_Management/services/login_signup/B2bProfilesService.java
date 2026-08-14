@@ -1,6 +1,8 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup;
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.Address;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProfile;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.Municipality;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.B2bProfileDTO;
@@ -99,10 +101,13 @@ public class B2bProfilesService {
 
         return this.b2bProfilesRepository.save(found);
     }
-    
+
     @Transactional
     public B2bProfile save(B2bProfile b2bProfile) {
         return this.b2bProfilesRepository.save(b2bProfile);
+    }
+
+    public void saveAllDetails(B2bProfile newB2bProfile, Municipality newMunicipality, Address newAddress) {
     }
 
 

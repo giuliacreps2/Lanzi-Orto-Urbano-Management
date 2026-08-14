@@ -1,0 +1,48 @@
+TODO
+
+1. Controllo password già usata in passato (cronologia password) — richiede nuova entità PasswordHistory, salvataggio ad ogni cambio password, confronto con bcrypt.matches contro le ultime N. Discusso come feature a sé, non banale.
+2. Grafica email migliorata — sia per sendNewPassword che confirmNewPassword, template HTML più curato di quello minimale attuale.
+3. Mittente email: cambiare da info@lanziortourbano.it a un indirizzo più specifico/riconoscibile (es. noreply@ o un nome che comunichi meglio il contesto).
+4. Rate limiting su POST /auth/password-reset/request (e probabilmente da estendere a /auth/login in futuro) — non ancora implementato, da fare prima di produzione.
+5. Validazione complessità password, sia frontend che backend — ecco il codice discusso, backend:
+java
+public record ConfirmNewPasswordDTO(
+        @NotBlank String token,
+        @NotBlank
+        @Size(min = 8, message = "La password deve avere almeno 8 caratteri")
+        @Pattern(
+                regexp = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$",
+                message = "La password deve contenere almeno una maiuscola, una minuscola e un numero"
+        )
+        String newPassword
+) {}
+
+Con @Valid @RequestBody sul controller. Frontend: stessa regex in JS (/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/) per disabilitare il bottone e mostrare un messaggio d'aiuto sotto il campo password, prima ancora del submit.
+
+6. Eliminare FormLogin.tsx (il vecchio, ormai sostituito da FormLogin1) e rinominare FormLogin1 quando pronta.
+7. Audit localStorage/header manuali nei file già isolati (admin/orders/*, BulkLabelPrinter, CategoryCreateForm, ProductCreateForm, lib/api/products.ts) — rimandato all'area backoffice.
+8. Collegare i link "Password dimenticata?" ovunque servano (già fatto in FormLogin1? verificare) verso /password-dimenticata.
+
+
+//REMARKETING
+
+Remarketing: due punti di abbandono distinti, non uno
+
+Con questo schema, in realtà ci sono due momenti diversi in cui un lead può fermarsi, e vanno trattati separatamente perché hai dati diversi disponibili in ciascuno:
+
+Abbandono A — mai verificata l'email (step1 → step2)
+L'utente ha compilato email+password ma non ha mai cliccato il link. Qui hai solo la riga in RegistrationRequest (isUsed = false), niente User ancora creato. Il remarketing qui è "conferma la tua email" — e tecnicamente è quasi un secondo invio dell'email di verifica, non proprio "marketing".
+
+Abbandono B — email verificata ma mai completato lo step3 (P.IVA ecc.)
+Qui l'utente esiste come User attivo e loggabile, ma non ha né B2bProfile né B2cProfile. Con lo schema che abbiamo bloccato, questo stato è identificabile in modo pulito: uno User con entrambe le relazioni null è per costruzione un lead B2B non completato (perché l'unico modo di avere uno User "nudo" è essere passati dal percorso A). Query semplice: User WHERE b2bProfile IS NULL AND b2cProfile IS NULL AND createdAt < soglia. Qui il remarketing è "completa la registrazione della tua attività", il messaggio più interessante commercialmente.
+
+Cosa serve strutturalmente (proposta, da discutere)
+
+Non basta solo la query — serve capire quando e quante volte mandare il promemoria, altrimenti si rischia di spammare la stessa persona ogni volta che gira un job.
+
+Un job schedulato (Spring: @Scheduled, con cron tipo "una volta al giorno") che gira le due query sopra su soglie temporali (es. 24h per il promemoria "verifica email", 3 giorni per "completa profilo azienda" — da decidere le tempistiche, magari anche più di un promemoria a distanza crescente, tipo giorno 1 / giorno 3 / giorno 7).
+Un modo per non rimandare la stessa email due volte. Qui ci sono due strade:
+Aggiungere un campo tipo reminderSentAt (o reminderCount) direttamente su RegistrationRequest (per abbandono A, già esiste la entity giusta) e uno analogo per abbandono B — ma su User non è elegante mescolare un concetto di marketing con l'entity di autenticazione.
+Alternativa più pulita: una piccola tabella dedicata, tipo MarketingReminder(userId o registrationRequestId, reminderType, sentAt), che tiene lo storico fuori da User/RegistrationRequest. Più facile da estendere in futuro (altri tipi di promemoria, altri canali).
+Quale preferisci? Per un progetto ancora in sviluppo, io andrei con la tabella dedicata: tiene User e RegistrationRequest puliti e concettualmente separati da "marketing".
+Nota GDPR, da non saltare: allo step1 avete già privacyAccepted come consenso obbligatorio, ma è consenso per il trattamento dati/registrazione, non necessariamente per "email di marketing". Il promemoria "conferma la tua email" è pacificamente transazionale (serve a completare un'azione che l'utente ha iniziato lui stesso), ma "completa il tuo profilo azienda" scivola più verso il commerciale. Vale la pena capire se serve un flag di consenso separato per queste comunicazioni, o se lo fate rientrare comunque nel consenso già raccolto perché è "relativo al servizio richiesto". Non è un problema bloccante ora, ma meglio saperlo prima di costruire la tabella dei reminder, così ci mettiamo subito un campo consentType o simile se serve.
