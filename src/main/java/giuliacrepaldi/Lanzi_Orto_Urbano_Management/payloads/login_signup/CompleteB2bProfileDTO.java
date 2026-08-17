@@ -7,7 +7,6 @@ import jakarta.validation.constraints.*;
 import java.util.UUID;
 
 public record CompleteB2bProfileDTO(
-        @NotBlank(message = "VAT number is required")
         @Pattern(
                 regexp = "^[0-9]{11}$",
                 message = "VAT number must contain 11 digits"
@@ -20,7 +19,7 @@ public record CompleteB2bProfileDTO(
         String fiscalCode,
         @Email(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "Pec is not correct")
         String pec,
-        @Pattern(regexp = "^[A-Za-z0-9]{7}$", message = "SDI is not valid")
+        @Pattern(regexp = "^$|^[A-Za-z0-9]{7}$", message = "SDI is not valid")
         String sdiCode,
         @NotBlank(message = "Company name is required")
         String companyName,

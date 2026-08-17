@@ -46,6 +46,10 @@ public class B2bProfile {
 
     @Column
     private String contactEmail;
+
+    @Column
+    private boolean useContactEmailForCommunications;
+
     @Column(nullable = false)
     private String companyName;
     @Column(nullable = false)

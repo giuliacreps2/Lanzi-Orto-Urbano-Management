@@ -40,7 +40,7 @@ public class SecurityConfig {
                     response.getWriter().write("{\"message\": \"Not authenticated\"}");
                 })
         );
-        
+
         httpSecurity.formLogin(formLogin -> formLogin.disable());
         httpSecurity.csrf(csrf -> csrf.disable());
 
@@ -66,7 +66,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/import/**").hasAuthority("ADMIN")
                 .requestMatchers("/roles/**").hasAuthority("ADMIN")
                 .requestMatchers("/auth/b2b/*/approve", "/auth/b2b/*/reject").hasAuthority("ADMIN")
-                .requestMatchers("/register/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/auth/register/b2b/complete-profile").authenticated()
+                .requestMatchers("/auth/register/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
                 .requestMatchers("/auth/**").permitAll()
                 .anyRequest().authenticated()

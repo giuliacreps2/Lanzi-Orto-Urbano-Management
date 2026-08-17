@@ -67,10 +67,12 @@ public class TokenFilter extends OncePerRequestFilter {
 
             Authentication authenticationToken = new UsernamePasswordAuthenticationToken(user, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            log.error("TOKEN OK - utente autenticato: {}", user.getEmail());
         } catch (Exception e) {
             // Token non valido/scaduto/utente non trovato: procedi come richiesta anonima.
             // Sarà Spring Security (o il controller) a rispondere 401/403 se la rotta è protetta.
             log.debug("Token non valido per {}: {}", request.getServletPath(), e.getMessage());
+            log.error("TOKEN FALLITO per {}: {}", request.getServletPath(), e.getMessage(), e);
             SecurityContextHolder.clearContext();
         }
 
@@ -97,6 +99,8 @@ public class TokenFilter extends OncePerRequestFilter {
 
         return antPathMatcher.match("/auth/login", servletPath)
                 || antPathMatcher.match("/auth/logout", servletPath)
-                || antPathMatcher.match("/register/**", servletPath);
+                || antPathMatcher.match("/auth/register/new-user", servletPath)
+                || antPathMatcher.match("/auth/register/b2b-user", servletPath)
+                || antPathMatcher.match("/auth/verify/**", servletPath);
     }
 }

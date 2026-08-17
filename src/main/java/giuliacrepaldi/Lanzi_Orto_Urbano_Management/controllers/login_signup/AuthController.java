@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -106,35 +107,40 @@ public class AuthController {
     @ResponseStatus(HttpStatus.OK)
     public NewUserRespDTO verifyB2c(@RequestParam("token") String token, HttpServletResponse response) {
         User user = this.authService.verifyAndCreateB2cAccount(token);
-
         String accessToken = this.tokenTools.generateToken(user);
 
         ResponseCookie cookie = cookieUtils.createAccessTokenCookie(accessToken, Duration.ofDays(7));
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         return new NewUserRespDTO(user.getUserId());
     }
 
+//    @GetMapping("/verify/account/b2b")
+//    @ResponseStatus(HttpStatus.OK)
+//    public NewUserRespDTO verifyNewB2b(@RequestParam("token") String token, HttpServletResponse response) {
+//        NewUserRespDTO result = this.authService.verifyAndCreateB2cAccount(token);
+//        User user = this.usersService.findById(result.userId());
+//        String accessToken = this.tokenTools.generateToken(user);
+//        ResponseCookie cookie = cookieUtils.createAccessTokenCookie(accessToken, Duration.ofDays(7));
+//        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+//
+//        return result;
+//    }
+
     //-------------------------------------------------B2B---------------------------------------//
 
-    
-//    //REGISTRAZIONE B2B
-//    @PostMapping("/register/b2b")
-//    @ResponseStatus(HttpStatus.CREATED)
-//    public Map<String, String> registerB2b(@RequestBody @Validated RegisterB2bProfileDTO body, BindingResult validationResult) {
-//        if (validationResult.hasErrors()) {
-//            List<String> errors = validationResult.getFieldErrors().stream().map(error -> error.getDefaultMessage()).toList();
-//            throw new ValidationException(errors);
-//        }
-//        String message = this.authService.registerNewB2bProfile(body);
-//        return Map.of("message", message);
-//    }
-//
-//    // VERIFICA EMAIL B2B
-//    @GetMapping("/verify/b2b")
-//    @ResponseStatus(HttpStatus.OK)
-//    public NewUserRespDTO verifyB2b(@RequestParam("token") String token) {
-//        return this.authService.verifyAndCreateB2bProfile(token);
-//    }
+
+    //REGISTRAZIONE B2B
+    @PostMapping("/register/b2b/complete-profile")
+    @ResponseStatus(HttpStatus.CREATED)
+    public B2bProfileRespDTO registerB2b(@RequestBody @Validated CompleteB2bProfileDTO body, BindingResult validationResult, @AuthenticationPrincipal User authenticatedUser) {
+        if (validationResult.hasErrors()) {
+            List<String> errors = validationResult.getFieldErrors().stream().map(error -> error.getDefaultMessage()).toList();
+            throw new ValidationException(errors);
+        }
+        return this.authService.createB2bProfile(authenticatedUser, body);
+    }
+
 
     //APPROVED B2B
     @GetMapping("/b2b/{userId}/approve")
