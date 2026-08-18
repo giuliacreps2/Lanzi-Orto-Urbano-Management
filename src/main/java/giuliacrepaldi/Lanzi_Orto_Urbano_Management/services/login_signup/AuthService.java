@@ -97,52 +97,52 @@ public class AuthService {
         log.info("New admin profile has been registered successfully: {}", body.email());
         return "New admin profile has been registered successfully";
     }
-
-    //VERIFICA E CREAZIONE ADMIN
-    @Transactional
-    public NewUserRespDTO verifyAndCreateAdminRole(String token) {
-
-        RegistrationRequest found = this.registrationRequestsRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new NotFoundException("Token already exists"));
-
-        if (found.isUsed())
-            throw new BadRequestException("Token is already used");
-
-        if (found.getTokenExpiresAt().isBefore(LocalDateTime.now()))
-            throw new BadRequestException("Token is expired");
-
-        Map<String, Object> metadata = found.getMetadata();
-
-        User newUser = new User();
-        newUser.setEmail(found.getEmail());
-        newUser.setPassword((String) metadata.get("password"));
-        newUser.setActive(true);
-        newUser.setEmailVerified(true);
-        newUser.setPrivacyAccepted(true);
-        newUser.setPrivacyAcceptedAt(LocalDateTime.now());
-        newUser.setCreatedAt(LocalDateTime.now());
-        newUser.setUpdatedAt(LocalDateTime.now());
-
-        User savedNewUser = this.usersRepository.save(newUser);
-
-        adminProfilesService.saveAdminProfile(
-                savedNewUser,
-                (String) metadata.get("name"),
-                (String) metadata.get("surname")
-        );
-
-        Role newRole = this.rolesRepository.findByRoleName("ADMIN")
-                .orElseThrow(() -> new NotFoundException("Role ADMIN not found"));
-
-        usersRolesService.saveUserRole(savedNewUser, newRole);
-
-        found.setUsed(true);
-        found.setUsedAt(LocalDateTime.now());
-        this.registrationRequestsRepository.save(found);
-
-        return new NewUserRespDTO(savedNewUser.getUserId());
-
-    }
+//
+//    //VERIFICA E CREAZIONE ADMIN
+//    @Transactional
+//    public NewUserRespDTO verifyAndCreateAdminRole(String token) {
+//
+//        RegistrationRequest found = this.registrationRequestsRepository.findByVerificationToken(token)
+//                .orElseThrow(() -> new NotFoundException("Token already exists"));
+//
+//        if (found.isUsed())
+//            throw new BadRequestException("Token is already used");
+//
+//        if (found.getTokenExpiresAt().isBefore(LocalDateTime.now()))
+//            throw new BadRequestException("Token is expired");
+//
+//        Map<String, Object> metadata = found.getMetadata();
+//
+//        User newUser = new User();
+//        newUser.setEmail(found.getEmail());
+//        newUser.setPassword((String) metadata.get("password"));
+//        newUser.setActive(true);
+//        newUser.setEmailVerified(true);
+//        newUser.setPrivacyAccepted(true);
+//        newUser.setPrivacyAcceptedAt(LocalDateTime.now());
+//        newUser.setCreatedAt(LocalDateTime.now());
+//        newUser.setUpdatedAt(LocalDateTime.now());
+//
+//        User savedNewUser = this.usersRepository.save(newUser);
+//
+//        adminProfilesService.saveAdminProfile(
+//                savedNewUser,
+//                (String) metadata.get("name"),
+//                (String) metadata.get("surname")
+//        );
+//
+//        Role newRole = this.rolesRepository.findByRoleName("ADMIN")
+//                .orElseThrow(() -> new NotFoundException("Role ADMIN not found"));
+//
+//        usersRolesService.saveUserRole(savedNewUser, newRole);
+//
+//        found.setUsed(true);
+//        found.setUsedAt(LocalDateTime.now());
+//        this.registrationRequestsRepository.save(found);
+//
+//        return new NewUserRespDTO(savedNewUser.getUserId(), );
+//
+//    }
 
 
     //---------------------------------------LOGIN-----------------------------------------//
@@ -285,6 +285,8 @@ public class AuthService {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("password", this.bcrypt.encode(body.password()));
         metadata.put("privacyAccepted", body.privacyAccepted());
+        metadata.put("intendedAccountType",
+                body.intendedAccountType() != null ? body.intendedAccountType().toString() : "B2C");
 
         String token = UUID.randomUUID().toString();
 
@@ -336,6 +338,8 @@ public class AuthService {
         newUser.setActive(true);
         newUser.setEmailVerified(true);
         newUser.setPrivacyAccepted((Boolean) metadata.get("privacyAccepted"));
+        String intendedType = (String) metadata.getOrDefault("intendedAccountType", "B2C");
+        newUser.setIntendedAccountType(AccountType.valueOf(intendedType));
         newUser.setPrivacyAcceptedAt(LocalDateTime.now());
         newUser.setCreatedAt(LocalDateTime.now());
         newUser.setUpdatedAt(LocalDateTime.now());

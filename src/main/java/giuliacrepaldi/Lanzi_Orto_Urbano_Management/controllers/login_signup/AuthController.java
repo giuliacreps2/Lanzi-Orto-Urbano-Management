@@ -2,6 +2,7 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.controllers.login_signup;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.cookie.CookieUtils;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.AccountType;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.UnauthorizedException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.*;
@@ -9,9 +10,11 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.security.TokenTools;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
@@ -30,15 +33,18 @@ public class AuthController {
     private final AuthService authService;
     private final CookieUtils cookieUtils;
     private final TokenTools tokenTools;
+    //VERIFICA EMAIL
+    @Value("${app.frontend.url:http://localhost:3000}")
+    private String frontendUrl;
+
+
+    //-----------------------------------LOGIN----------------------------//
 
     public AuthController(AuthService authService, CookieUtils cookieUtils, TokenTools tokenTools) {
         this.authService = authService;
         this.cookieUtils = cookieUtils;
         this.tokenTools = tokenTools;
     }
-
-
-    //-----------------------------------LOGIN----------------------------//
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
@@ -58,6 +64,8 @@ public class AuthController {
         return Map.of("message", "Logout effettuato con successo");
     }
 
+    //----------------------------RESET PASSWORD----------------------------//
+
     @GetMapping("/me")
     @ResponseStatus(HttpStatus.OK)
     public LoggedUserDTO me(Authentication authentication) {
@@ -67,18 +75,10 @@ public class AuthController {
         return this.authService.getCurrentUser(user);
     }
 
-    //----------------------------RESET PASSWORD----------------------------//
-
     @PostMapping("/password-reset/request")
     @ResponseStatus(HttpStatus.OK)
     public void requestPasswordReset(@RequestBody RequestNewPasswordDTO body) {
         this.authService.requestPasswordReset(body.email());
-    }
-
-    @PostMapping("/password-reset/confirm")
-    @ResponseStatus(HttpStatus.OK)
-    public void confirmPasswordReset(@Valid @RequestBody ConfirmNewPasswordDTO body) {
-        this.authService.resetPassword(body.token(), body.newPassword());
     }
 
     //------------------------------SIGN IN--------------------------------//
@@ -86,6 +86,15 @@ public class AuthController {
 
     //------B2C AND B2B AS B2C--------//
     //STEP. 1
+
+    @PostMapping("/password-reset/confirm")
+    @ResponseStatus(HttpStatus.OK)
+    public void confirmPasswordReset(@Valid @RequestBody ConfirmNewPasswordDTO body) {
+        this.authService.resetPassword(body.token(), body.newPassword());
+    }
+
+
+    //STEP. 2
 
     //RICHIESTA
     @PostMapping("/register/new-user")
@@ -99,33 +108,23 @@ public class AuthController {
         return Map.of("message", message);
     }
 
-
-    //STEP. 2
-
-    //VERIFICA EMAIL
     @GetMapping("/verify/new-account")
-    @ResponseStatus(HttpStatus.OK)
-    public NewUserRespDTO verifyB2c(@RequestParam("token") String token, HttpServletResponse response) {
+    public ResponseEntity<Map<String, String>> verifyB2c(@RequestParam("token") String token, HttpServletResponse response) {
         User user = this.authService.verifyAndCreateB2cAccount(token);
         String accessToken = this.tokenTools.generateToken(user);
 
+        // Imposta il cookie JWT
         ResponseCookie cookie = cookieUtils.createAccessTokenCookie(accessToken, Duration.ofDays(7));
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        return new NewUserRespDTO(user.getUserId());
-    }
+        // Determina la rotta di destinazione
+        String targetPath = (user.getIntendedAccountType() == AccountType.B2B)
+                ? "/signup/register-new-business"
+                : "/";
 
-//    @GetMapping("/verify/account/b2b")
-//    @ResponseStatus(HttpStatus.OK)
-//    public NewUserRespDTO verifyNewB2b(@RequestParam("token") String token, HttpServletResponse response) {
-//        NewUserRespDTO result = this.authService.verifyAndCreateB2cAccount(token);
-//        User user = this.usersService.findById(result.userId());
-//        String accessToken = this.tokenTools.generateToken(user);
-//        ResponseCookie cookie = cookieUtils.createAccessTokenCookie(accessToken, Duration.ofDays(7));
-//        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-//
-//        return result;
-//    }
+        // Restituisci il path come JSON invece del Redirect HTTP 302
+        return ResponseEntity.ok(Map.of("redirectUrl", targetPath));
+    }
 
     //-------------------------------------------------B2B---------------------------------------//
 

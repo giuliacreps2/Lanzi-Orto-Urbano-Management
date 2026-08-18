@@ -1,7 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.controllers.login_signup;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.NewUserRespDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup.RegisterAdminProfileDTO;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.AuthService;
 import org.springframework.http.HttpStatus;
@@ -38,12 +37,12 @@ public class AdminProfileController {
     }
 
 
-    //VERIFICA TOKEN E CREAZIONE ADMIN
-    @GetMapping("/verify/admin")
-    @ResponseStatus(HttpStatus.CREATED)
-    public NewUserRespDTO verifyAdmin(@RequestParam("token") String token) {
-        return this.authService.verifyAndCreateAdminRole(token);
-    }
+//    //VERIFICA TOKEN E CREAZIONE ADMIN
+//    @GetMapping("/verify/admin")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public NewUserRespDTO verifyAdmin(@RequestParam("token") String token) {
+//        return this.authService.verifyAndCreateAdminRole(token);
+//    }
 
     @PostMapping("/approved-b2b/{userId}")
     @PreAuthorize("hasAuthority('ADMIN')")

@@ -1,5 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.login_signup;
 
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.AccountType;
 import jakarta.validation.constraints.*;
 
 public record RegisterAccountUserDTO(
@@ -10,6 +11,7 @@ public record RegisterAccountUserDTO(
         @Pattern(regexp = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$", message = "Your password must have at least a capital, a lowercase")
         String password,
         @AssertTrue(message = "Privacy policy must be accepted to continue")
-        boolean privacyAccepted
+        boolean privacyAccepted,
+        AccountType intendedAccountType
 ) {
 }

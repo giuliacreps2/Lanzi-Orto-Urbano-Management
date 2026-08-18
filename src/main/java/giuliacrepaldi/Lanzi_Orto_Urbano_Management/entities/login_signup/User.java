@@ -3,6 +3,7 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.AccountType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -46,6 +47,10 @@ public class User implements UserDetails {
     private boolean enabled;
     @Column(nullable = false)
     private boolean privacyAccepted = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "intended_account_type", nullable = false)
+    private AccountType intendedAccountType = AccountType.B2C;
 
     private LocalDateTime privacyAcceptedAt;
 
