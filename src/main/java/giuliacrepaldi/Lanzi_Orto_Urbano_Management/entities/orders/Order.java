@@ -63,6 +63,11 @@ public class Order {
 
     private String orderNotes;
 
+    @Column(nullable = false)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    private Integer pointsRedeemed; // nullable, null se non ha usato punti
+
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();

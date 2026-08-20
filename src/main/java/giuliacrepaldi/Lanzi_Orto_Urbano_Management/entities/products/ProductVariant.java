@@ -37,6 +37,9 @@ public class ProductVariant {
     @Column(nullable = false)
     private Unit unit;
 
+    @Column(nullable = false)
+    private boolean stockTracked;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> technicalDetails;

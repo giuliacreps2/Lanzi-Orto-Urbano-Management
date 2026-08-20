@@ -46,3 +46,11 @@ Aggiungere un campo tipo reminderSentAt (o reminderCount) direttamente su Regist
 Alternativa più pulita: una piccola tabella dedicata, tipo MarketingReminder(userId o registrationRequestId, reminderType, sentAt), che tiene lo storico fuori da User/RegistrationRequest. Più facile da estendere in futuro (altri tipi di promemoria, altri canali).
 Quale preferisci? Per un progetto ancora in sviluppo, io andrei con la tabella dedicata: tiene User e RegistrationRequest puliti e concettualmente separati da "marketing".
 Nota GDPR, da non saltare: allo step1 avete già privacyAccepted come consenso obbligatorio, ma è consenso per il trattamento dati/registrazione, non necessariamente per "email di marketing". Il promemoria "conferma la tua email" è pacificamente transazionale (serve a completare un'azione che l'utente ha iniziato lui stesso), ma "completa il tuo profilo azienda" scivola più verso il commerciale. Vale la pena capire se serve un flag di consenso separato per queste comunicazioni, o se lo fate rientrare comunque nel consenso già raccolto perché è "relativo al servizio richiesto". Non è un problema bloccante ora, ma meglio saperlo prima di costruire la tabella dei reminder, così ci mettiamo subito un campo consentType o simile se serve.
+
+
+TODO list — backlog tecnico registrazione/auth
+
+Password history — impedire riuso ultime N password in fase di reset. Richiede tabella/campo per storicizzare gli hash (con retention policy, es. ultime 5) e controllo in PasswordResetService prima del salvataggio.
+Rate limiting — su login, richiesta reset password, e probabilmente su signup wizard (anti-bot). Valuta se farlo a livello di Filter/interceptor Spring o con qualcosa tipo Bucket4j; da decidere se per-IP o per-account.
+Email più curate — template Resend attuali (reset password, eventualmente conferma registrazione) da rifare con branding coerente. Basso rischio tecnico, puro lavoro di template.
+B2B reminder email scheduled job — job schedulato (Spring @Scheduled o simile) per ricordare completamento profilo/documenti B2B se il wizard resta incompleto. Richiede definire trigger: dopo quanto tempo da signup incompleto parte il reminder.

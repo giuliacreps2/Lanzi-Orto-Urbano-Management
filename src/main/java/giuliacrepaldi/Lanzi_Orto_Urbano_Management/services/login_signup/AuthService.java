@@ -483,5 +483,5 @@ public class AuthService {
         return "B2B profile has been rejected";
     }
 
-
+    
 }

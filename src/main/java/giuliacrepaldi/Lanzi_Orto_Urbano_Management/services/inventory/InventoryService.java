@@ -1,14 +1,20 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.inventory;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.inventory.Inventory;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.inventory.InventoryMovement;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Label;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Product;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.inventory.InvMovementType;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.products.AvailabilityStatus;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.InsufficientStockException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.inventory.InventoryDTO;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.inventory.StockAvailabilityResponse;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.inventory.InventoryMovementsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.inventory.InventoryRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductVariantsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductVariantsService;
 import jakarta.transaction.Transactional;
@@ -31,11 +37,15 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
     private final ProductsRepository productsRepository;
     private final ProductVariantsService productVariantsService;
+    private final ProductVariantsRepository productVariantsRepository;
+    private final InventoryMovementsRepository inventoryMovementsRepository;
 
-    public InventoryService(InventoryRepository inventoryRepository, ProductsRepository productsRepository, ProductVariantsService productVariantsService) {
+    public InventoryService(InventoryRepository inventoryRepository, ProductsRepository productsRepository, ProductVariantsService productVariantsService, ProductVariantsRepository productVariantsRepository, InventoryMovementsRepository inventoryMovementsRepository) {
         this.inventoryRepository = inventoryRepository;
         this.productsRepository = productsRepository;
         this.productVariantsService = productVariantsService;
+        this.productVariantsRepository = productVariantsRepository;
+        this.inventoryMovementsRepository = inventoryMovementsRepository;
     }
 
     //CREATE
@@ -138,4 +148,74 @@ public class InventoryService {
         found.setCurrentQuantity(found.getCurrentQuantity() + (int) quantity);
         this.inventoryRepository.save(found);
     }
+
+
+    //CONOSCERE LA QUANTITà DELLE VARIANTI
+    public StockAvailabilityResponse getAvailableQuantity(UUID variantId) {
+        List<Inventory> found = this.inventoryRepository.findByProductVariant_VariantIdAndDeletedAtIsNull(variantId);
+
+        if (found.isEmpty()) {
+            return new StockAvailabilityResponse(false, null);
+        } else {
+            int quantity = found.stream().mapToInt(Inventory::getCurrentQuantity).sum();
+            return new StockAvailabilityResponse(true, quantity);
+        }
+    }
+
+
+    //CONFRONTA TRA QUANTITà DISPONIBILE E QUANTITà RICHIESTA
+    //RISERVANDO LA QUANTITà RICHIESTA, GESTENDO EVENTUALI RICHIESTE CONCORRENTI
+
+    public void reserveStock(UUID variantId, int quantity) {
+        List<Inventory> found = this.inventoryRepository.findByProductVariant_VariantIdAndDeletedAtIsNull(variantId);
+
+        if (found.isEmpty()) {
+            return;
+        }
+
+        Inventory inventory = found.get(0);
+
+        int rowsUpdated = this.inventoryRepository.decrementQuantity(inventory.getInventoryId(), quantity);
+
+        if (rowsUpdated == 0) {
+            throw new InsufficientStockException("Variant not available");
+        }
+        InventoryMovement newInvMov = InventoryMovement.builder()
+                .quantityInvMovement(quantity)
+                .invMovementType(InvMovementType.OUT)
+                .reasonInvMovement("Order reservation")
+                .inventory(inventory)
+                .build();
+
+        this.inventoryMovementsRepository.save(newInvMov);
+    }
+
+
+    //RIMETTE A MAGAZZINO I PEZZI DI UN ORDINE NON ANDATO A BUON FINE
+    public void releaseStock(UUID variantId, int quantity) {
+        List<Inventory> found = this.inventoryRepository.findByProductVariant_VariantIdAndDeletedAtIsNull(variantId);
+
+        if (found.isEmpty()) {
+            return;
+        }
+
+        Inventory inventory = found.get(0);
+
+        int rowsUpdated = this.inventoryRepository.incrementQuantity(inventory.getInventoryId(), quantity);
+
+        if (rowsUpdated == 0) {
+            throw new NotFoundException("Variant not found");
+        }
+
+        InventoryMovement newInvMov = InventoryMovement.builder()
+                .quantityInvMovement(quantity)
+                .invMovementType(InvMovementType.IN)
+                .reasonInvMovement("Order cancelled")
+                .inventory(inventory)
+                .build();
+
+        this.inventoryMovementsRepository.save(newInvMov);
+    }
+
+
 }
