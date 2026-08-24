@@ -12,5 +12,5 @@ public interface ICartItemService {
 
     void removeItemFromCart(Cart cart, UUID cartItemId);
 
-    CartItem getCartItem(UUID cartId);
+    CartItem getCartItem(UUID cartItemId);
 }
