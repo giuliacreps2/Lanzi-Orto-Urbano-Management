@@ -21,7 +21,4 @@ public class OrderItemsService {
     }
 
 
-//    public OrderItem saveNewItem(OrderItemDTO body) {
-//
-//    }
 }
