@@ -3,7 +3,10 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.orders;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProfile;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2cProfile;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.*;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Delivery;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Order;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.OrderItem;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.PaymentMethod;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
@@ -12,11 +15,11 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusDeliveryTy
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusOrder;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.inventory.StockAvailabilityResponse;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.LoyaltyPointsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.OrderItemsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.OrdersRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.payment.CreateHostedOrdersReqRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.cart.CartsService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.inventory.InventoryService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.B2bProfilesService;
@@ -59,86 +62,118 @@ public class OrdersService implements IOrdersService {
     private final UsersService usersService;
     private final CartsService cartsService;
     private final InventoryService inventoryService;
+    private final CreateHostedOrdersReqRepository createHostedOrdersReqRepository;
 
 
-    @Override
-    @Transactional
-    public Order createOrderFromCart(User currentUser, CheckoutRequestDTO body) {
+    //1. CREAZIONE ORDINE DAL CARRELLO
+//    @Transactional
+//    private Order createAndSavePendingOrder(CheckoutRequestDTO body) {
+//
+//        User currentUser = null;
+//        boolean isGuest = true;
+//
+//        if (isGuest && (body.guestEmail() == null || body.guestEmail().isBlank())) {
+//            throw new BadRequestException("Guest Email Required to Checkout Order");
+//        }
+//
+//        Cart cart = isGuest
+//                ? cartsService.getActiveCartByEmail(body.guestEmail())
+//                : cartsService.getActiveCartByUserId(currentUser);
+//
+//        if (cart.getItems() == null || cart.getItems().isEmpty()) {
+//            throw new BadRequestException("No items in order");
+//        }
+//
+//
+//        for (CartItem cartItem : cart.getItems()) {
+//            UUID variantId = cartItem.getProductVariantCartItem().getVariantId();
+//
+//            StockAvailabilityResponse stock = inventoryService.getAvailableQuantity(variantId);
+//
+//            if (!stock.tracked() || stock.availableQuantity() < cartItem.getQuantityCartItem()) {
+//                throw new BadRequestException("Giacenza insufficiente per: "
+//                        + variantId);
+//            }
+//        }
+//
+//
+//        B2cProfile b2c = isGuest ? null : currentUser.getB2cProfile();
+//        B2bProfile b2b = isGuest ? null : currentUser.getB2bProfile();
+//
+//        if (!isGuest && b2c == null && b2b == null) {
+//            throw new BadRequestException("Invalid checkout request. User profile not found");
+//        }
+//
+//        //1. Salva Ordine PENDING
+//
+//        Order newOrder = Order.builder()
+//                .statusOrder(StatusOrder.PENDING)
+//                .sourceOrder(SourceOrder.CUSTOMER_SELF)
+//                .deliveryType(body.deliveryType())
+//                .reorderedFormByAdmin(false)
+//                .orderCreatedAt(LocalDateTime.now())
+//                .loyaltyPointsUsed(false)
+//                .totalAmount(BigDecimal.ZERO)
+//                .discountAmount(BigDecimal.ZERO)
+//                .paymentMethod(body.paymentMethod())
+//                .b2cProfile(b2c)
+//                .b2bProfile(b2b)
+//                .guestEmail(isGuest ? body.guestEmail() : null)
+//                .guestName(isGuest ? body.guestName() : null)
+//                .build();
+//
+//        List<OrderItem> orderItems = new ArrayList<>();
+//
+//
+//        for (CartItem cartItem : cart.getItems()) {
+//            inventoryService.releaseStock(cartItem.getProductVariantCartItem().getVariantId(), cartItem.getQuantityCartItem());
+//        }
+//
+//        BigDecimal total = BigDecimal.ZERO;
+//        for (CartItem cartItem : cart.getItems()) {
+//            OrderItem orderItem = new OrderItem();
+//            orderItem.setOrder(newOrder);
+//            orderItem.setProductVariant(cartItem.getProductVariantCartItem());
+//            orderItem.setQuantity(cartItem.getQuantityCartItem());
+////          orderItem.setPriceSnapshot(cartItem.getPriceSnapshot());
+//        }
+//
+//        newOrder.setTotalAmount(BigDecimal.valueOf(total.longValueExact()));
+//
+//        Order orderPending = this.ordersRepository.save(newOrder);
+//
+//
+//        //2.Richiesta di avviare il pagamento
+//        CreatedHostedOrderRequest request = CreatedHostedOrderRequest.builder()
+//                .createdAt(LocalDateTime.now())
+//                .order(orderPending)
+//                .build();
+//
+//
 
-        boolean isGuest = currentUser == null;
+    /// /        cartsService.markCartAsConverted(cart, savedOrder);
+    /// /
+    /// /        return savedOrder;
+//    }
 
-        if (isGuest && (body.guestEmail() == null || body.guestEmail().isBlank())) {
-            throw new BadRequestException("Guest Email Required to Checkout Order");
-        }
+//    //2. INIZIALIZZARE IL PAGAMENTO
+//    public PaymentResponse initPayment(CheckoutRequestDTO body) {
+//
+//        //Salvo l'ordine prima di interagire con il gateway
+//        Order orderPending = createAndSavePendingOrder(body);
+//
+//        //Preparo la chiamata Nexi usando l'ID dell'Ordine salvato
+//        CreatedHostedOrderRequest request = CreatedHostedOrderRequest.builder()
+//                .createdAt(LocalDateTime.now())
+//                .order(orderPending)
+//
+//                .build();
+//
+//        // 3. Esegui la chiamata a Nexi per ottenere l'URL di pagamento
+//        return nextPaymentSession.initialize(request);
+//    }
 
-        Cart cart = isGuest
-                ? cartsService.getActiveCartByEmail(body.guestEmail())
-                : cartsService.getActiveCartByUserId(currentUser);
-
-        if (cart.getItems() == null || cart.getItems().isEmpty()) {
-            throw new BadRequestException("No items in order");
-        }
-
-
-        for (CartItem cartItem : cart.getItems()) {
-            UUID variantId = cartItem.getProductVariantCartItem().getVariantId();
-
-            StockAvailabilityResponse stock = inventoryService.getAvailableQuantity(variantId);
-
-            if (!stock.tracked() || stock.availableQuantity() < cartItem.getQuantityCartItem()) {
-                throw new BadRequestException("Giacenza insufficiente per: "
-                        + variantId);
-            }
-        }
-
-
-        B2cProfile b2c = isGuest ? null : currentUser.getB2cProfile();
-        B2bProfile b2b = isGuest ? null : currentUser.getB2bProfile();
-
-        if (!isGuest && b2c == null && b2b == null) {
-            throw new BadRequestException("Invalid checkout request. User profile not found");
-        }
-
-        Order newOrder = Order.builder()
-                .statusOrder(StatusOrder.PENDING)
-                .sourceOrder(SourceOrder.CUSTOMER_SELF)
-                .deliveryType(body.deliveryType())
-                .reorderedFormByAdmin(false)
-                .orderCreatedAt(LocalDateTime.now())
-                .loyaltyPointsUsed(false)
-                .totalAmount(BigDecimal.ZERO)
-                .discountAmount(BigDecimal.ZERO)
-                .paymentMethod(body.paymentMethod())
-                .b2cProfile(b2c)
-                .b2bProfile(b2b)
-                .guestEmail(isGuest ? body.guestEmail() : null)
-                .guestName(isGuest ? body.guestName() : null)
-                .build();
-
-        List<OrderItem> orderItems = new ArrayList<>();
-
-
-        for (CartItem cartItem : cart.getItems()) {
-            inventoryService.releaseStock(cartItem.getProductVariantCartItem().getVariantId(), cartItem.getQuantityCartItem());
-        }
-
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (CartItem cartItem : cart.getItems()) {
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(newOrder);
-            orderItem.setProductVariant(cartItem.getProductVariantCartItem());
-            orderItem.setQuantity(cartItem.getQuantityCartItem());
-            orderItem.setPriceSnapshot(cartItem.getPriceSnapshot());
-        }
-
-        newOrder.setTotalAmount(totalAmount);
-
-        Order savedOrder = this.ordersRepository.save(newOrder);
-
-        cartsService.markCartAsConverted(cart, savedOrder);
-
-        return savedOrder;
-    }
+    //3.
 
 
     //CALCULATE TOTAL AMOUNT

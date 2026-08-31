@@ -2,6 +2,7 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.payment;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Order;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.payment.SessionStatus;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.payment.PaymentResponse;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,11 +34,14 @@ public class NexiPaymentSession {
     @Column(nullable = false, length = 2048)
     private String resultUrl;
 
-    @Column(length = 2048)
+    @Column(nullable = false, length = 2048)
     private String cancelUrl;
 
     @Column(length = 2048)
     private String notificationUrl;
+
+    @Column(nullable = false)
+    private String language = "ita";
 
     @Enumerated(EnumType.STRING)
     private SessionStatus sessionStatus = SessionStatus.CREATED;
@@ -56,4 +60,7 @@ public class NexiPaymentSession {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
+    public PaymentResponse initialize(CreatedHostedOrderRequest request) {
+        return null;
+    }
 }
