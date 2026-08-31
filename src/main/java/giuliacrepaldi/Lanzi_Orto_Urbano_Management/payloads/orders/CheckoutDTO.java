@@ -1,7 +1,7 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.DeliveryType;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.PaymentType;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.payment.PaymentType;
 
 import java.util.List;
 import java.util.Map;

@@ -20,4 +20,6 @@ public interface CartRepository extends JpaRepository<Cart, UUID> {
     Optional<Cart> findByB2cProfileAndCartStatus(B2cProfile b2cProfile, CartStatus cartStatus);
 
     Optional<Cart> findByB2bProfileAndCartStatus(B2bProfile b2bProfile, CartStatus cartStatus);
+
+    Optional<Cart> findByEmailWithoutAuthUserAndCartStatus(String email, CartStatus status);
 }

@@ -74,4 +74,15 @@ public class CartsService implements ICartService {
         cart.setCartLastActivityAt(LocalDateTime.now());
         cartRepository.save(cart);
     }
+
+    @Override
+    public Cart getActiveCartByEmail(String email) {
+        return cartRepository.findByEmailWithoutAuthUserAndCartStatus(email, CartStatus.OPEN)
+                .orElseGet(() -> cartRepository.save(Cart.builder()
+                        .emailWithoutAuthUser(email)
+                        .cartCreatedAt(LocalDateTime.now())
+                        .cartLastActivityAt(LocalDateTime.now())
+                        .cartStatus(CartStatus.OPEN)
+                        .build()));
+    }
 }

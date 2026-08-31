@@ -12,16 +12,21 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusDeliveryTy
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusOrder;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.inventory.StockAvailabilityResponse;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.LoyaltyPointsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.OrderItemsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.OrdersRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.cart.CartsService;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.inventory.InventoryService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.B2bProfilesService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.B2cProfilesService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.UsersService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.BatchesService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.PriceListsService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductVariantsService;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,8 +43,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Slf4j
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 @Service
-public class OrdersService {
+public class OrdersService implements IOrdersService {
 
     private final OrdersRepository ordersRepository;
     private final OrderItemsRepository orderItemsRepository;
@@ -51,165 +57,86 @@ public class OrdersService {
     private final LoyaltyPointsRepository loyaltyPointsRepository;
     private final PriceListsService priceListsService;
     private final UsersService usersService;
+    private final CartsService cartsService;
+    private final InventoryService inventoryService;
 
 
-    public OrdersService(OrdersRepository ordersRepository, OrderItemsRepository orderItemsRepository, B2cProfilesService b2cProfilesService, B2bProfilesService b2bProfilesService, ProductVariantsService productVariantsService, BatchesService batchesService, LoyaltyPointsService loyaltyPointsService, LoyaltyPointsRepository loyaltyPointsRepository, PriceListsService priceListsService, UsersService usersService) {
-        this.ordersRepository = ordersRepository;
-        this.orderItemsRepository = orderItemsRepository;
-        this.b2cProfilesService = b2cProfilesService;
-        this.b2bProfilesService = b2bProfilesService;
-        this.productVariantsService = productVariantsService;
-        this.batchesService = batchesService;
-        this.loyaltyPointsService = loyaltyPointsService;
-        this.loyaltyPointsRepository = loyaltyPointsRepository;
-        this.priceListsService = priceListsService;
-        this.usersService = usersService;
-    }
-
-
-    //CREATE
+    @Override
     @Transactional
-    public Order createOrderFromCart(User currentUser, CheckoutDTO body) {
+    public Order createOrderFromCart(User currentUser, CheckoutRequestDTO body) {
 
-        //PROFILO
-        B2cProfile b2c = null;
-        B2bProfile b2b = null;
-        ClientCategory clientCategory;
+        boolean isGuest = currentUser == null;
 
-        if (currentUser.getB2cProfile() != null) {
-            b2c = currentUser.getB2cProfile();
-            clientCategory = ClientCategory.B2C;
-        } else if (currentUser.getB2bProfile() != null) {
-            b2b = currentUser.getB2bProfile();
-            clientCategory = ClientCategory.B2B;
-        } else {
+        if (isGuest && (body.guestEmail() == null || body.guestEmail().isBlank())) {
+            throw new BadRequestException("Guest Email Required to Checkout Order");
+        }
+
+        Cart cart = isGuest
+                ? cartsService.getActiveCartByEmail(body.guestEmail())
+                : cartsService.getActiveCartByUserId(currentUser);
+
+        if (cart.getItems() == null || cart.getItems().isEmpty()) {
+            throw new BadRequestException("No items in order");
+        }
+
+
+        for (CartItem cartItem : cart.getItems()) {
+            UUID variantId = cartItem.getProductVariantCartItem().getVariantId();
+
+            StockAvailabilityResponse stock = inventoryService.getAvailableQuantity(variantId);
+
+            if (!stock.tracked() || stock.availableQuantity() < cartItem.getQuantityCartItem()) {
+                throw new BadRequestException("Giacenza insufficiente per: "
+                        + variantId);
+            }
+        }
+
+
+        B2cProfile b2c = isGuest ? null : currentUser.getB2cProfile();
+        B2bProfile b2b = isGuest ? null : currentUser.getB2bProfile();
+
+        if (!isGuest && b2c == null && b2b == null) {
             throw new BadRequestException("Invalid checkout request. User profile not found");
         }
 
-        Order order = Order.builder()
+        Order newOrder = Order.builder()
                 .statusOrder(StatusOrder.PENDING)
-                .deliveryType(body.deliveryType())
                 .sourceOrder(SourceOrder.CUSTOMER_SELF)
+                .deliveryType(body.deliveryType())
                 .reorderedFormByAdmin(false)
                 .orderCreatedAt(LocalDateTime.now())
+                .loyaltyPointsUsed(false)
                 .totalAmount(BigDecimal.ZERO)
-                .loyaltyPointsUsed(body.loyaltyPointsUsed())
+                .discountAmount(BigDecimal.ZERO)
+                .paymentMethod(body.paymentMethod())
                 .b2cProfile(b2c)
                 .b2bProfile(b2b)
+                .guestEmail(isGuest ? body.guestEmail() : null)
+                .guestName(isGuest ? body.guestName() : null)
                 .build();
 
-//LISTA ORDINI
         List<OrderItem> orderItems = new ArrayList<>();
-        BigDecimal totalOrderAmount = BigDecimal.ZERO;
-        Batch firstAvailableBatch = null;
 
-        for (OrderItemDTO cartItem : body.items()) {
-            ProductVariant variant = this.productVariantsService.findById(cartItem.variantId());
 
-            BigDecimal unitPrice = this.priceListsService.resolvePriceForVariant(
-                    variant.getVariantId(), clientCategory, cartItem.quantity());
-
-            BigDecimal itemTotalPrice = unitPrice.multiply(BigDecimal.valueOf(cartItem.quantity()));
-            totalOrderAmount = totalOrderAmount.add(itemTotalPrice);
-
-            Batch availableBatch = this.batchesService.findAvailableBatchForVariant(variant.getVariantId());
-            if (firstAvailableBatch == null) firstAvailableBatch = availableBatch;
-
-            OrderItem orderItem = OrderItem.builder()
-                    .order(order)
-                    .productVariant(variant)
-                    .quantity(cartItem.quantity())
-                    .price(unitPrice)
-                    .batch(availableBatch)
-                    .build();
-
-            orderItems.add(orderItem);
+        for (CartItem cartItem : cart.getItems()) {
+            inventoryService.releaseStock(cartItem.getProductVariantCartItem().getVariantId(), cartItem.getQuantityCartItem());
         }
 
-        order.setItems(orderItems);
-        order.setTotalAmount(totalOrderAmount);
-
-
-        //PAYMENT
-        PaymentMethod payment = PaymentMethod.builder()
-                .paymentType(body.paymentType())
-                .billingDetails(body.billingDetails())
-                .build();
-        order.setPaymentMethod(payment);
-
-
-        //DELIVERY
-        String recipientName;
-        if (b2c != null) {
-            recipientName = b2c.getName();
-        } else {
-            assert b2b != null;
-            recipientName = b2b.getContactName() + " " + b2b.getContactSurname();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (CartItem cartItem : cart.getItems()) {
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(newOrder);
+            orderItem.setProductVariant(cartItem.getProductVariantCartItem());
+            orderItem.setQuantity(cartItem.getQuantityCartItem());
+            orderItem.setPriceSnapshot(cartItem.getPriceSnapshot());
         }
 
-        LocalDateTime deliveryDate = firstAvailableBatch != null ? firstAvailableBatch.getExpectedHarvestDate().atStartOfDay().plusDays(2)
-                : LocalDateTime.now().plusDays(10);
+        newOrder.setTotalAmount(totalAmount);
 
-        Delivery newDelivery = Delivery.builder()
-                .trackingNumber(String.valueOf(UUID.randomUUID()))
-                .statusDeliveryType(StatusDeliveryType.PENDING)
-                .deliveryDate(deliveryDate)
-                .recipientName(recipientName)
-                .shippingAddress(body.billingDetails())
-                //COSTO SPEDIZIONE DA CALCOLARE
-                .priceDelivery(BigDecimal.ZERO)
-                .driver(null)
-                .b2cProfile(b2c)
-                .b2bProfile(b2b)
-                .build();
+        Order savedOrder = this.ordersRepository.save(newOrder);
 
-        order.setDelivery(newDelivery);
+        cartsService.markCartAsConverted(cart, savedOrder);
 
-        //LOYALTY POINTS
-
-        if (body.loyaltyPointsUsed()) {
-            Long availablePoints = b2c != null ? b2c.getLoyaltyPoints() : b2b.getLoyaltyPoints();
-
-            if (availablePoints <= 0) {
-                throw new BadRequestException("Loyalty Points not available");
-            }
-
-            BigDecimal discount = this.loyaltyPointsService.convertPointsToDiscount(availablePoints);
-
-            if (discount.compareTo(totalOrderAmount) > 0) {
-                discount = totalOrderAmount;
-            }
-
-            order.setTotalAmount(totalOrderAmount.subtract(discount));
-            order.setLoyaltyDiscount(BigDecimal.valueOf(discount.doubleValue()));
-
-            Long pointsUsed = this.loyaltyPointsService.convertDiscountToPoints(discount);
-            if (b2c != null) {
-                b2c.setLoyaltyPoints(b2c.getLoyaltyPoints() - (pointsUsed));
-                b2c.setLoyaltyLastActivity(LocalDateTime.now());
-                this.b2cProfilesService.save(b2c);
-            } else {
-                b2b.setLoyaltyPoints(b2b.getLoyaltyPoints() - (pointsUsed));
-                b2b.setLoyaltyLastActivity(LocalDateTime.now());
-                this.b2bProfilesService.save(b2b);
-            }
-
-            //LOYALTYPOINTS NUOVI
-            LoyaltyPoint newLoyalPoints = LoyaltyPoint.builder()
-                    .descriptionLoyaltyPoints("Points gain from new Order")
-                    .order(order)
-                    .b2cProfile(order.getB2cProfile())
-                    .b2bProfile(order.getB2bProfile())
-                    .trayReturn(null)
-                    .build();
-
-            loyaltyPointsRepository.save(newLoyalPoints);
-
-
-        }
-
-        Order savedOrder = ordersRepository.save(order);
-        log.info("Order saved successfully with id: {}", savedOrder.getOrderId());
         return savedOrder;
     }
 

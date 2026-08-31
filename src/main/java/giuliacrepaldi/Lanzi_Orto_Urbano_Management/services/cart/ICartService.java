@@ -17,4 +17,6 @@ public interface ICartService {
     void clearCart(UUID cartId);
 
     void markCartAsConverted(Cart cart, Order order);
+
+    Cart getActiveCartByEmail(String email);
 }

@@ -1,6 +1,6 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders;
 
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.PaymentType;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.payment.PaymentType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;

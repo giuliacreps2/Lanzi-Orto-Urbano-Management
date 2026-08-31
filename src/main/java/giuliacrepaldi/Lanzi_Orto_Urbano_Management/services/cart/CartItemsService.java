@@ -39,7 +39,7 @@ public class CartItemsService implements ICartItemService {
         ProductVariant productVariant = productVariantsService.findById(variantId);
 
         ClientCategory clientCategory;
-        if (cart.getB2cProfile() != null) {
+        if (cart.getB2cProfile() != null || cart.getEmailWithoutAuthUser() != null) {
             clientCategory = ClientCategory.B2C;
         } else if (cart.getB2bProfile() != null) {
             clientCategory = ClientCategory.B2B;

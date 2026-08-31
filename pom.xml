@@ -128,6 +128,17 @@
             <artifactId>resend-java</artifactId>
             <version>v4.14.1</version>
         </dependency>
+
+        <!--NEXI PAYAMENT-->
+        <dependency>
+            <groupId>io.github.nexipayments</groupId>
+            <artifactId>sdk-java-npg</artifactId>
+            <version>0.0.6-RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

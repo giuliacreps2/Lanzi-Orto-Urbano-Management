@@ -1,4 +1,4 @@
-package giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders;
+package giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.payment;
 
 public enum PaymentType {
     CASH,

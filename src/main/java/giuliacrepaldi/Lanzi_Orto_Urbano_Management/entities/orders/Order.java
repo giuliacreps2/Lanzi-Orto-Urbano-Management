@@ -2,6 +2,8 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProfile;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2cProfile;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.payment.CreatedHostedOrderRequest;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.payment.NexiPaymentSession;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.ChannelOrder;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.DeliveryType;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.SourceOrder;
@@ -60,6 +62,9 @@ public class Order {
 
     @Column(nullable = false)
     private BigDecimal totalAmount;
+    @Column(nullable = false)
+    private String currency;
+
 
     private String orderNotes;
 
@@ -68,6 +73,8 @@ public class Order {
 
     private Integer pointsRedeemed; // nullable, null se non ha usato punti
 
+    private String guestEmail;
+    private String guestName;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
@@ -91,5 +98,13 @@ public class Order {
     @OneToOne
     @JoinColumn(name = "subscription_id")
     private Subscription subscription;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "payment_session_id", nullable = false)
+    private NexiPaymentSession nexiPaymentSession;
+
+    @ManyToMany
+    @JoinColumn(name = "hosted_order_req_payment")
+    private CreatedHostedOrderRequest createdHostedOrderRequest;
 
 }

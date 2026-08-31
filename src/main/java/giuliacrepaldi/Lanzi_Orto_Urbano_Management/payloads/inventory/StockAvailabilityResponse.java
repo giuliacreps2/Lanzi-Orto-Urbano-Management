@@ -4,4 +4,5 @@ public record StockAvailabilityResponse(
         boolean tracked,
         Integer availableQuantity
 ) {
+
 }
