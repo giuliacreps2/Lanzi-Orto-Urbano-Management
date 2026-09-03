@@ -100,10 +100,10 @@ public class Order {
     private Subscription subscription;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "payment_session_id", nullable = false)
+    @JoinColumn(name = "nexi_payment_session_id", nullable = false)
     private NexiPaymentSession nexiPaymentSession;
 
-    @ManyToMany
+    @OneToOne
     @JoinColumn(name = "hosted_order_req_payment")
     private CreatedHostedOrderRequest createdHostedOrderRequest;
 

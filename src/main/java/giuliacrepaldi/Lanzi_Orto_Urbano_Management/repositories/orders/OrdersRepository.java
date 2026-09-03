@@ -12,4 +12,6 @@ public interface OrdersRepository extends JpaRepository<Order, UUID> {
     List<Order> findByB2bProfile_B2bProfileIdOrderByOrderCreatedAtDesc(UUID b2bProfileId);
 
     List<Order> findByB2cProfile_B2cProfileIdOrderByOrderCreatedAtDesc(UUID b2cProfileId);
+
+
 }

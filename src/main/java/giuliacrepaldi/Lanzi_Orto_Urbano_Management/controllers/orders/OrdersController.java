@@ -6,8 +6,10 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusOrder;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.ValidationException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.orders.OrdersService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
@@ -15,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -28,16 +31,49 @@ public class OrdersController {
     }
 
 
-    @PostMapping("/checkout")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Order createOrder(@AuthenticationPrincipal User currentUser, @RequestBody @Validated CheckoutDTO body, BindingResult validation) {
-        if (validation.hasErrors()) {
-            List<String> errors = validation.getFieldErrors()
-                    .stream().map(e -> e.getDefaultMessage()).toList();
-            throw new ValidationException(errors);
-        }
-        return this.ordersService.createOrderFromCart(currentUser, body);
+//
+//    @PostMapping("/checkout")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public ResponseEntity<Map<String, String>> createOrder(@AuthenticationPrincipal User currentUser, @RequestBody @Validated CheckoutDTO body, HttpServletResponse response) {
+//
+//        User user = this.authService.verifyAndCreateB2cAccount(token);
+//        String accessToken = this.tokenTools.generateToken(user);
+//
+//        // Imposta il cookie JWT
+//        ResponseCookie cookie = cookieUtils.createAccessTokenCookie(accessToken, Duration.ofDays(7));
+//        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+//
+//        // Determina la rotta di destinazione
+//        String targetPath = (body == )
+//                ? "/signup/register-new-business"
+//                : "/";
+//
+//        return ResponseEntity.ok(Map.of("hostedPage", targetPath));
+//    }
+
+    @GetMapping("/{orderId}/status")
+    public ResponseEntity<Map<String, String>> verifyStatusPayment(@PathVariable UUID orderId, @RequestParam("token") String token, HttpServletResponse response) {
+        Order orderPending = this.ordersService.findById(orderId);
+
+//        User user = this.authService.verifyAndCreateB2cAccount(token);
+//        String accessToken = this.tokenTools.generateToken(user);
+//
+//        // Imposta il cookie JWT
+//        ResponseCookie cookie = cookieUtils.createAccessTokenCookie(accessToken, Duration.ofDays(7));
+//        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+
+        // Determina la rotta di destinazione
+        String targetPath = (orderPending.getStatusOrder() == StatusOrder.PENDING)
+                ? "/checkout/result/[orderId]"
+                : "/";
+
+        // Restituisci il path come JSON invece del Redirect HTTP 302
+        return ResponseEntity.ok(Map.of("resultUrl", targetPath));
     }
+
+    //----------
+
 
     @PatchMapping("/{orderId}/cancel")
     @ResponseStatus(HttpStatus.OK)
@@ -56,6 +92,19 @@ public class OrdersController {
         }
         this.ordersService.findByIdAndReorderByAdmin(orderId, currentUser, body);
     }
+
+
+//    @PostMapping("/checkout")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public Response createOrderFromCart(@PathVariable UUID orderId, @AuthenticationPrincipal User currentUser, @RequestBody @Validated CheckoutDTO body, BindingResult validation) {
+//        if (validation.hasErrors()) {
+//            List<String> errors = validation.getFieldErrors()
+//                    .stream().map(e -> e.getDefaultMessage()).toList();
+//            throw new ValidationException(errors);
+//        }
+//        return this.ordersService.findByCartIdByUser(orderId, currentUser, body);
+//    }
+
 
     @PatchMapping("/{orderId}/apply-loyalty")
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -147,7 +196,7 @@ public class OrdersController {
     public List<OrderSummaryDTO> getMyOrders(@AuthenticationPrincipal User currentUser) {
         return this.ordersService.findByUser(currentUser);
     }
-    
+
 
     @GetMapping("/{orderId}")
     @PreAuthorize("hasAuthority('ADMIN')")

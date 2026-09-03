@@ -1,7 +1,7 @@
 package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.payment;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.PaymentMethod;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.payment.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 

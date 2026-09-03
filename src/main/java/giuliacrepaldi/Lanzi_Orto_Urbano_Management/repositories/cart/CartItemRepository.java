@@ -8,5 +8,7 @@ import java.util.UUID;
 
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
-    void deleteAllByCartId(UUID cartId);
+    void deleteAllByCart_CartId(UUID cartId);
+
+
 }

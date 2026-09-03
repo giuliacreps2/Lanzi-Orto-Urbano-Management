@@ -2,7 +2,6 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.payment;
 
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Order;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.payment.SessionStatus;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.payment.PaymentResponse;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,6 +22,7 @@ public class NexiPaymentSession {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "nexi_payment_session_id")
     private UUID nexiPaymentSessionId;
 
     @Column(nullable = false)
@@ -60,7 +60,4 @@ public class NexiPaymentSession {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    public PaymentResponse initialize(CreatedHostedOrderRequest request) {
-        return null;
-    }
 }

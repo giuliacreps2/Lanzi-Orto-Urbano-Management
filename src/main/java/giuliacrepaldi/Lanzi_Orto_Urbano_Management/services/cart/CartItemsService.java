@@ -7,7 +7,7 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.cart.CartItemRepository;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.cart.CartRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.cart.CartsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.products.ProductVariantsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.PriceListsService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.products.ProductVariantsService;
@@ -22,7 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CartItemsService implements ICartItemService {
 
-    private final CartRepository cartRepository;
+    private final CartsRepository cartRepository;
     private final ProductVariantsRepository productVariantsRepository;
     private final ProductVariantsService productVariantsService;
     private final PriceListsService priceListsService;

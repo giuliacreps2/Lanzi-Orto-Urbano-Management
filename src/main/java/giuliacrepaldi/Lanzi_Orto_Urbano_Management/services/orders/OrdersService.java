@@ -3,10 +3,7 @@ package giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.orders;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2bProfile;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.B2cProfile;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.login_signup.User;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Delivery;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.Order;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.OrderItem;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.PaymentMethod;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.orders.*;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.Batch;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.entities.products.ProductVariant;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.ClientCategory;
@@ -15,13 +12,18 @@ import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusDeliveryTy
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.enums.orders.StatusOrder;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.BadRequestException;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.exceptions.NotFoundException;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.inventory.StockAvailabilityResponse;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.payloads.orders.*;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.cart.CartsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.LoyaltyPointsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.OrderItemsRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.orders.OrdersRepository;
-import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.payment.CreateHostedOrdersReqRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.payment.CreatedHostedOrdersReqRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.payment.NexiPaymentSessionRepository;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.repositories.payment.NexiPaymentTransactionRepository;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.cart.CartsService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.inventory.InventoryService;
+import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.AuthService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.B2bProfilesService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.B2cProfilesService;
 import giuliacrepaldi.Lanzi_Orto_Urbano_Management.services.login_signup.UsersService;
@@ -62,12 +64,16 @@ public class OrdersService implements IOrdersService {
     private final UsersService usersService;
     private final CartsService cartsService;
     private final InventoryService inventoryService;
-    private final CreateHostedOrdersReqRepository createHostedOrdersReqRepository;
-
+    private final CreatedHostedOrdersReqRepository createdHostedOrdersReqRepository;
+    private final NexiPaymentSessionRepository nexiPaymentSessionRepository;
+    private final NexiPaymentTransactionRepository nexiPaymentTransactionRepository;
+    private final AuthService authService;
+    private final CartsRepository cartsRepository;
 
     //1. CREAZIONE ORDINE DAL CARRELLO
 //    @Transactional
-//    private Order createAndSavePendingOrder(CheckoutRequestDTO body) {
+//    @Override
+//    public Order createOrderFromCart(CheckoutRequestDTO body) {
 //
 //        User currentUser = null;
 //        boolean isGuest = true;
@@ -105,7 +111,6 @@ public class OrdersService implements IOrdersService {
 //        }
 //
 //        //1. Salva Ordine PENDING
-//
 //        Order newOrder = Order.builder()
 //                .statusOrder(StatusOrder.PENDING)
 //                .sourceOrder(SourceOrder.CUSTOMER_SELF)
@@ -135,7 +140,8 @@ public class OrdersService implements IOrdersService {
 //            orderItem.setOrder(newOrder);
 //            orderItem.setProductVariant(cartItem.getProductVariantCartItem());
 //            orderItem.setQuantity(cartItem.getQuantityCartItem());
-////          orderItem.setPriceSnapshot(cartItem.getPriceSnapshot());
+
+    /// /          orderItem.setPriceSnapshot(cartItem.getPriceSnapshot());
 //        }
 //
 //        newOrder.setTotalAmount(BigDecimal.valueOf(total.longValueExact()));
@@ -149,14 +155,75 @@ public class OrdersService implements IOrdersService {
 //                .order(orderPending)
 //                .build();
 //
+//        this.createHostedOrdersReqRepository.save(request);
 //
-
-    /// /        cartsService.markCartAsConverted(cart, savedOrder);
-    /// /
-    /// /        return savedOrder;
+//        //3.Avvio sessione Pagamento
+//        nextPaymentSession.initialize(request);
+//
+//        NexiPaymentSession session = NexiPaymentSession.builder()
+//                .sessionStatus(SessionStatus.CREATED)
+//                .createdAt(LocalDateTime.now())
+//                .language("ita")
+//                .cancelUrl("")
+//                .hostedPageUrl("")
+//                .resultUrl("")
+//                .order(orderPending)
+//                .securityTokenSession()
+//                .build();
+//
+//        nexiPaymentSessionRepository.save(session);
+//
+//        //4. Avvio la sessione di Transazione
+//
+//        NexiPaymentTransaction transaction = NexiPaymentTransaction.builder()
+//                .amount(orderPending.getTotalAmount(BigDecimal.valueOf(total.longValueExact())))
+//                .createdAt(LocalDateTime.now())
+//                .currency("EUR")
+//                .nextPaymentSession(session)
+//                .paymentStatus(PaymentStatus.SUCCESS)
+//                .paymentInstrumentInfo("")
+//                .build();
+//
+//        nexiPaymentTransactionRepository.save(transaction);
+//
+//
+//        //5. Ordine passa da Pending a Completato
+//
+//        newOrder.setStatusOrder(StatusOrder.COMPLETED);
+//
+//        //6. Scarico dal magazzino
+//
+//
+//        Order savedOrder = this.ordersRepository.save(newOrder);
+//
+//        return savedOrder;
 //    }
 
-//    //2. INIZIALIZZARE IL PAGAMENTO
+
+//    public CheckoutInitResponse createOrderFromCart(CheckoutRequestDTO body, User currentUser) {
+//        boolean isGuest = true;
+//
+//        if (isGuest && (body.guestEmail() == null || body.guestEmail().isBlank())) {
+//            throw new BadRequestException("Guest Email Required to Checkout Order");
+//        }
+//
+//        Cart cart = isGuest
+//                ? cartsService.getActiveCartByEmail(body.guestEmail())
+//                : cartsService.getActiveCartByUserId(currentUser);
+//    }
+
+
+    //PRIVATE METHODS TO COMPLETE ORDER AND PAYMENT
+
+    //
+//    private Cart resolveActiveCart(CheckoutRequestDTO body, User currentUser) {
+//        return null;
+//    }
+
+
+    //-----------------//
+
+    //2. INIZIALIZZARE IL PAGAMENTO
 //    public PaymentResponse initPayment(CheckoutRequestDTO body) {
 //
 //        //Salvo l'ordine prima di interagire con il gateway
@@ -183,7 +250,6 @@ public class OrdersService implements IOrdersService {
         return items.stream().map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()))).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-
     //UPDATE
     public Order findByIdAndUpdateOrderStatus(UUID orderId, StatusOrder newStatus) {
         Order found = this.ordersRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
@@ -195,7 +261,6 @@ public class OrdersService implements IOrdersService {
         log.info("Order has been updated successfully: {}", found);
         return found;
     }
-
 
     //DELETE
     @Transactional
@@ -347,7 +412,6 @@ public class OrdersService implements IOrdersService {
         return this.ordersRepository.findAll(pageable);
     }
 
-
     public Order startProcessingOrder(UUID orderId) {
         Order found = this.findById(orderId);
 
@@ -364,7 +428,6 @@ public class OrdersService implements IOrdersService {
 
         return this.ordersRepository.save(found);
     }
-
 
     public AdminOrderDetailDTO findAdminOrderDetailById(UUID orderId) {
         Order found = this.findById(orderId);
@@ -475,6 +538,101 @@ public class OrdersService implements IOrdersService {
                 )).toList()
         )).toList();
     }
+
+    @Transactional
+    @Override
+    public Order createOrderFromCart(User currentUser, CheckoutRequestDTO body) {
+
+        boolean isGuest = currentUser == null;
+
+        if (isGuest && (body.guestEmail() == null || body.guestEmail().isBlank())) {
+            throw new BadRequestException("Guest email is required to checkout");
+        }
+
+        //Recuperiamo il carrello
+        Cart cart = cartsService.getCartForCheckout(body.cartId(), currentUser, body.guestEmail());
+
+        if (cart.getItems() == null || cart.getItems().isEmpty()) {
+            throw new BadRequestException("No items in order");
+        }
+
+
+        //Verifichiamo la disponibilità degli oggetti nel carrello
+        for (CartItem cartItem : cart.getItems()) {
+
+            UUID variantId = cartItem.getProductVariantCartItem().getVariantId();
+
+            StockAvailabilityResponse stock = inventoryService.getAvailableQuantity(variantId);
+
+            if (!stock.tracked() || stock.availableQuantity() < cartItem.getQuantityCartItem()) {
+                throw new BadRequestException("Insufficient quantity" + variantId);
+            }
+        }
+
+        //Calcolo il totale
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (CartItem cartItem : cart.getItems()) {
+
+            BigDecimal unitPrice = cartItem.getPriceSnapshot();
+
+            BigDecimal itemTotal = unitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantityCartItem()));
+
+            total = total.add(itemTotal);
+        }
+
+        long totalAmount = total.movePointRight(2).longValueExact();
+
+
+        //Recupero dell'utente
+        B2cProfile b2cProfile = null;
+        B2bProfile b2bProfile = null;
+
+        if (currentUser != null) {
+            b2cProfile = cart.getB2cProfile();
+            b2bProfile = cart.getB2bProfile();
+        }
+
+        //Creazione dell'ordine con stato Pending
+        Order newOrder = Order.builder()
+                .statusOrder(StatusOrder.PENDING)
+                .sourceOrder(SourceOrder.CUSTOMER_SELF)
+                .deliveryType(body.deliveryType())
+                .reorderedFormByAdmin(false)
+                .orderCreatedAt(LocalDateTime.now())
+                .loyaltyPointsUsed(false)
+                .totalAmount(total)
+                .discountAmount(BigDecimal.ZERO)
+                .paymentMethod(body.paymentMethod())
+                .b2cProfile(b2cProfile)
+                .b2bProfile(b2bProfile)
+                .guestEmail(isGuest ? body.guestEmail() : null)
+                .guestName(isGuest ? body.guestName() : null)
+                .build();
+
+        Order savedOrder = ordersRepository.save(newOrder);
+
+        //Trasformo gli articoli del carrello negli articoli dell'ordine
+        List<OrderItem> orderItems = new ArrayList<>();
+
+        for (CartItem cartItem : cart.getItems()) {
+
+            OrderItem orderItem = new OrderItem();
+
+            orderItem.setOrder(savedOrder);
+            orderItem.setProductVariant(cartItem.getProductVariantCartItem());
+            orderItem.setQuantity(cartItem.getQuantityCartItem());
+            orderItem.setPrice(cartItem.getPriceSnapshot());
+
+            orderItems.add(orderItem);
+        }
+
+        orderItemsRepository.saveAll(orderItems);
+
+        return savedOrder;
+    }
+
+
 }
 
 
